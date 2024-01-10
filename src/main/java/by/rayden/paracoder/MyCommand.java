@@ -11,7 +11,7 @@ import java.util.concurrent.Callable;
 // NOTE: inner classes and fields are public for testing
 
 @Component
-@Command(name = "mycommand", mixinStandardHelpOptions = true, subcommands = MyCommand.Sub.class)
+@Command(name = "mycommand", version = "Paracoder version 0.1", mixinStandardHelpOptions = true, subcommands = MyCommand.Sub.class)
 public class MyCommand implements Callable<Integer> {
     @Option(names = "-x", description = "optional option")
     public String x;
