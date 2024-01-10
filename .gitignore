@@ -1,0 +1,5 @@
+﻿# Ignoring all IntelliJ IDEA files
+.idea/
+
+# Archived Logs
+archived/

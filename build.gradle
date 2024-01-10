@@ -1,0 +1,39 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.1'
+	id 'io.spring.dependency-management' version '1.1.4'
+//	id 'org.graalvm.buildtools.native' version '0.9.28'
+}
+
+group = 'by.rayden'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '21'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'info.picocli:picocli-spring-boot-starter:4.7.5'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+compileJava {
+	options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
