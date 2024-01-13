@@ -1,0 +1,16 @@
+logging:
+  level:
+    root: ERROR
+
+spring:
+  main:
+    banner-mode: "off"
+#  output:
+#    ansi:
+#      enabled: detect
+
+#picocli:
+#  usage:
+#    width: 120
+
+

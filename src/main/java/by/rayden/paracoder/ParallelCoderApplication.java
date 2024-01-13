@@ -7,7 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class ParallelCoderApplication {
 
     public static void main(String[] args) {
-        System.exit(SpringApplication.exit(SpringApplication.run(ParallelCoderApplication.class, args)));
+        int exitCode = SpringApplication.exit(SpringApplication.run(ParallelCoderApplication.class, args));
+        System.exit(exitCode);
     }
 
 }

@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.2.1'
@@ -16,7 +18,12 @@ configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
+
+	all {
+		exclude group: 'io.micrometer'
+	}
 }
+
 
 repositories {
 	mavenCentral()
@@ -24,14 +31,51 @@ repositories {
 
 dependencies {
 	implementation 'info.picocli:picocli-spring-boot-starter:4.7.5'
+	implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-compileJava {
+tasks.withType(JavaCompile).configureEach {
 	options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
+
+//Enable JDK21 preview features, see https://docs.gradle.org/current/userguide/building_java_projects.html#sec:feature_preview
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs += "--enable-preview"
+}
+
+tasks.withType(Test).configureEach {
+	jvmArgs += "--enable-preview"
+}
+
+tasks.withType(JavaExec).configureEach {
+	jvmArgs += "--enable-preview"
+}
+
+def generatedResources = "$buildDir/generated-resources/main"
+sourceSets {
+	main {
+		//Register an output folder on the main SourceSet:
+		output.dir(generatedResources, builtBy: 'generateVersionTxt')
+		//It is now a part of the 'main' classpath and will be a part of the jar
+	}
+}
+
+//A task that generates the "version.txt" resources:
+tasks.register('generateVersionTxt') {
+	description 'Creates a version.txt file with build info that is added to the root of the jar'
+	doLast {
+		new File(generatedResources).mkdirs()
+		def generated = new File(generatedResources, "version.txt")
+		generated.text = """
+Version: $rootProject.version
+Buildtime: ${new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())}
+Application-name: $rootProject.name
+          """
+	}
 }
 
 tasks.named('test') {
