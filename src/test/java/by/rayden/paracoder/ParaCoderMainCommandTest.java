@@ -31,7 +31,7 @@ public class ParaCoderMainCommandTest {
             .parseArgs("-x", "abc", "sub", "-y", "123");
 
 //        assertEquals("abc", this.paraCoderMainCommand.x);
-        assertNull(this.paraCoderMainCommand.inputPathList);
+        assertNull(this.paraCoderMainCommand.getInputPathList());
 
         assertTrue(parseResult.hasSubcommand());
         ParseResult subResult = parseResult.subcommand();

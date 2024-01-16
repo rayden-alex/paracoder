@@ -30,6 +30,11 @@ repositories {
 }
 
 dependencies {
+	//to get rid of "unknown enum constant javax.annotation.meta.When.MAYBE" warning
+    //compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+	compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.0'
+
+
 	implementation 'info.picocli:picocli-spring-boot-starter:4.7.5'
 	implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
 	compileOnly 'org.projectlombok:lombok'

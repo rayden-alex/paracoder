@@ -2,6 +2,7 @@ package by.rayden.paracoder.cli.command;
 
 import by.rayden.paracoder.cli.PropertiesVersionProvider;
 import by.rayden.paracoder.service.RecoderService;
+import lombok.Getter;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -9,6 +10,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -31,24 +33,31 @@ public class ParaCoderMainCommand implements Callable<Integer> {
 
     @Option(names = {"-pf", "--preserve-file-timestamp"},
         description = "Preserve original file timestamp (default: ${DEFAULT-VALUE}).")
+    @Getter
     private boolean preserveFileTimestamp = true;
 
     @Option(names = {"-pd", "--preserve-dir-timestamp"},
         description = "Preserve original directories timestamp (default: ${DEFAULT-VALUE}).")
+    @Getter
     private boolean preserveDirTimestamp = true;
 
     @Option(names = {"-r", "--recurse"},
 //        defaultValue = "false",
 //        showDefaultValue = CommandLine.Help.Visibility.ALWAYS,
         description = "Recursively process all input directories (default: ${DEFAULT-VALUE}).")
+    @Getter
     private boolean recurse = false;
 
     @Parameters(description = "Files and directories to recode")
-    public List<Path> inputPathList;
+    private List<Path> inputPathList;
 
 
     public ParaCoderMainCommand(RecoderService recoderService) {
         this.recoderService = recoderService;
+    }
+
+    public List<Path> getInputPathList() {
+        return Collections.unmodifiableList(this.inputPathList);
     }
 
     @Override
@@ -63,7 +72,10 @@ public class ParaCoderMainCommand implements Callable<Integer> {
             return CommandLine.ExitCode.USAGE;
         }
 
-        return this.recoderService.recode(this.inputPathList);
+        ParaCoderParams paraCoderParams = new ParaCoderParams(this.inputPathList, this.preserveFileTimestamp,
+            this.preserveDirTimestamp, this.recurse);
+
+        return this.recoderService.recode(paraCoderParams);
     }
 
 }
