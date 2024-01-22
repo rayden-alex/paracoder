@@ -40,6 +40,7 @@ public class CollectToMapFileVisitor extends SimpleFileVisitor<Path> {
 
     @Override
     public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException {
+        this.isAtLeastOneFileInDirAdded = false;
         this.pathTree.put(dir.toAbsolutePath(), attrs);
         return FileVisitResult.CONTINUE;
     }
