@@ -37,6 +37,7 @@ dependencies {
 
 	implementation 'info.picocli:picocli-spring-boot-starter:4.7.5'
 	implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
+	implementation 'commons-io:commons-io:2.11.0'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
 	annotationProcessor 'org.projectlombok:lombok'
