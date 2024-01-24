@@ -16,8 +16,8 @@ public class PatternPropertiesTest {
     @Test
     public void testPatternProperties() {
         assertThat(this.patternProperties.getFileExtensions()).isNotEmpty();
-        assertThat(this.patternProperties.getCommand().keySet()).isNotEmpty();
-        assertThat(this.patternProperties.getCommand().values()).isNotEmpty();
+        assertThat(this.patternProperties.getCommandTemplate().keySet()).isNotEmpty();
+        assertThat(this.patternProperties.getCommandTemplate().values()).isNotEmpty();
     }
 
 }

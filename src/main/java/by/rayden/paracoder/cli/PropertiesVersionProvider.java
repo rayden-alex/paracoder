@@ -2,6 +2,7 @@ package by.rayden.paracoder.cli;
 
 import picocli.CommandLine.IVersionProvider;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.Properties;
 
@@ -36,15 +37,19 @@ import java.util.Properties;
  *     }
  * }
  * </pre>
+ *
+ * See build.gradle "generateVersionTxt" task
  */
 public class PropertiesVersionProvider implements IVersionProvider {
     public String[] getVersion() throws Exception {
         URL url = getClass().getResource("/version.txt");
         if (url == null) {
-            return new String[]{"No version.txt file found in the classpath. Is examples.jar in the classpath?"};
+            return new String[]{"No version.txt file found in the classpath."};
         }
-        Properties properties = new Properties();
-        properties.load(url.openStream());
+        var properties = new Properties();
+        try (InputStream stream = url.openStream()) {
+            properties.load(stream);
+        }
         return new String[]{
             STR."\{properties.getProperty("Application-name")} version @|bold,yellow \"\{properties.getProperty("Version")}\"|@",
             STR."Built: @|yellow \{properties.getProperty("Buildtime")}|@",

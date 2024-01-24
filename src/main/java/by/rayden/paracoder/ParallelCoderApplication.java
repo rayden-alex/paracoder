@@ -1,8 +1,12 @@
 package by.rayden.paracoder;
 
+import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootApplication
 @EnableConfigurationProperties
@@ -18,7 +22,18 @@ public class ParallelCoderApplication {
         } catch (ClassNotFoundException _) {
         }
 
-        int exitCode = SpringApplication.exit(SpringApplication.run(ParallelCoderApplication.class, args));
+        // https://stackoverflow.com/questions/21343529/all-my-java-applications-now-throw-a-java-awt-headlessexception
+//        System.setProperty("java.awt.headless", "false");
+
+        // See org.springframework.boot.SpringApplication.configureHeadlessProperty
+        // It will only set a property if it doesn't exist already.
+        ConfigurableApplicationContext applicationContext = new SpringApplicationBuilder(ParallelCoderApplication.class)
+            .web(WebApplicationType.NONE)
+//            .headless(false)
+            .bannerMode(Banner.Mode.OFF)
+            .run(args);
+
+        int exitCode = SpringApplication.exit(applicationContext);
         System.exit(exitCode);
     }
 

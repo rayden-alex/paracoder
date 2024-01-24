@@ -5,7 +5,7 @@ pattern:
     - wav
     - ape
 
-  command:
+  commandTemplate:
     flac: >-
       c:\Rip\opus-tools\opusenc.exe --quiet --music --vbr --bitrate 192 "{{F}}" "{{D}}{{P}}{{N}}.opus"
     wav: >-

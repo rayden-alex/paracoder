@@ -16,5 +16,5 @@ import java.util.Set;
 @Setter
 public class PatternProperties {
     private Set<String> fileExtensions;
-    private Map<String, String> command;
+    private Map<String, String> commandTemplate;
 }

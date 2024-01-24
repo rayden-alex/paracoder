@@ -14,13 +14,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-// NOTE: inner classes and fields are public for testing
-
 @Component
-@Command(name = "paracoder", versionProvider = PropertiesVersionProvider.class, mixinStandardHelpOptions = true,
+@Command(name = "paracoder",
+    versionProvider = PropertiesVersionProvider.class,
+    mixinStandardHelpOptions = true,
     header = "ParaCoder CLI",
-    description = "This is a ParaCoder application which recode lossless audio to another format using multiple " +
-        "threads.",
+    description = """
+        This is a ParaCoder application
+        to recode lossless audio files to another format using multiple threads.""",
     parameterListHeading = "%nParameters:%n",
     optionListHeading    = "%nOptions:%n",
     showDefaultValues = true,
@@ -48,6 +49,11 @@ public class ParaCoderMainCommand implements Callable<Integer> {
     @Getter
     private boolean recurse = false;
 
+    @Option(names = {"-d", "--delete-to-trash"},
+        description = "Delete source files to the trash (default: ${DEFAULT-VALUE}).")
+    @Getter
+    private boolean deleteSourceFilesToTrash = true;
+
     @Parameters(description = "Files and directories to recode")
     private List<Path> inputPathList;
 
@@ -62,20 +68,23 @@ public class ParaCoderMainCommand implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        System.out.println("picocli.defaults.paracoder.path="
-            + System.getProperty("picocli.defaults.paracoder.path"));
-
-        System.out.println("picocli.usage.width="
-            + System.getProperty("picocli.usage.width"));
+//        System.out.println("picocli.defaults.paracoder.path="
+//            + System.getProperty("picocli.defaults.paracoder.path"));
+//
+//        System.out.println("picocli.usage.width="
+//            + System.getProperty("picocli.usage.width"));
 
         if (this.inputPathList == null || this.inputPathList.isEmpty()) {
             return CommandLine.ExitCode.USAGE;
         }
 
-        ParaCoderParams paraCoderParams = new ParaCoderParams(this.inputPathList, this.preserveFileTimestamp,
-            this.preserveDirTimestamp, this.recurse);
+        var paraCoderParams = new Params(this.inputPathList, this.preserveFileTimestamp, this.preserveDirTimestamp,
+            this.recurse, this.deleteSourceFilesToTrash);
 
         return this.recoderService.recode(paraCoderParams);
     }
 
+    public record Params(List<Path> inputPathList, boolean preserveFileTimestamp, boolean preserveDirTimestamp,
+                         boolean recurse, boolean deleteSourceFilesToTrash) {
+    }
 }
