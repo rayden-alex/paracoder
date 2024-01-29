@@ -3,7 +3,7 @@ package by.rayden.paracoder.service;
 import by.rayden.paracoder.cli.command.ParaCoderMainCommand;
 import by.rayden.paracoder.config.PatternProperties;
 import lombok.SneakyThrows;
-import org.springframework.lang.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
@@ -13,12 +13,13 @@ import java.io.IOException;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +32,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class RecoderService {
     public static final Comparator<Path> REVERSED_PATH_COMPARATOR = Comparator
         .comparingInt(Path::getNameCount)
@@ -58,45 +60,50 @@ public class RecoderService {
      */
     public int recode(ParaCoderMainCommand.Params paraCoderParams) {
         this.paraCoderParams = paraCoderParams;
+        this.processFactory.init();
 
         try {
-            Map<Path, BasicFileAttributes> pathMap = buildAbsolutePathTree(this.paraCoderParams.inputPathList());
-
-            List<CompletableFuture<Integer>> completableFutures = processFiles(pathMap);
-            waitForComplete(completableFutures);
-
-            Integer maxExitCode = completableFutures.stream()
-                                                    .map(CompletableFuture::join)
-                                                    .reduce(Math::max)
-                                                    .orElse(CommandLine.ExitCode.OK);
-
+            Map<Path, BasicFileAttributes> pathMap = buildAbsolutePathTree();
+            Integer maxExitCode = asyncProcessFiles(pathMap);
             processDirs(pathMap);
+
             System.out.println(CommandLine.Help.Ansi.ON.string(STR."@|blue Max exit code: \{maxExitCode}|@"));
             return maxExitCode;
         } catch (Exception e) {
+            log.error("Recode error: {}",e.getMessage(), e);
             System.err.println(CommandLine.Help.Ansi.ON.string(STR."Error: @|red \{e.getMessage()}|@"));
             return CommandLine.ExitCode.SOFTWARE;
         }
     }
 
-    private void waitForComplete(List<CompletableFuture<Integer>> completableFutures) throws InterruptedException,
-        ExecutionException, TimeoutException {
-
-        CompletableFuture
-            .allOf(completableFutures.toArray(new CompletableFuture[0]))
-            .get(1, TimeUnit.HOURS);
-    }
-
-    @NonNull
-    private Map<Path, BasicFileAttributes> buildAbsolutePathTree(final Iterable<? extends Path> inputPathList) throws IOException {
+    private Map<Path, BasicFileAttributes> buildAbsolutePathTree() throws IOException {
         var fileVisitor = new CollectToMapFileVisitor(this.patternProperties.getFileExtensions());
         int depth = this.paraCoderParams.recurse() ? Integer.MAX_VALUE : 1;
         Set<FileVisitOption> fileVisitOptions = Collections.emptySet();
 
-        for (Path inputPath : inputPathList) {
+        for (Path inputPath : this.paraCoderParams.inputPathList()) {
             Files.walkFileTree(inputPath, fileVisitOptions, depth, fileVisitor);
         }
+        log.debug("PathTree: {}", fileVisitor.getPathTree());
         return fileVisitor.getPathTree();
+    }
+
+    private Integer asyncProcessFiles(Map<Path, BasicFileAttributes> pathMap) throws InterruptedException,
+        ExecutionException, TimeoutException {
+
+        List<CompletableFuture<Integer>> futures = processFiles(pathMap);
+
+        // Waiting for all processes to complete
+        CompletableFuture
+            .allOf(futures.toArray(new CompletableFuture[0]))
+            .get(1, TimeUnit.HOURS);
+
+        // At this point all futures must convert their exception to integer exit codes.
+        // See oneFileProcessResultAction()
+        return futures.stream()
+                      .map(CompletableFuture::join)
+                      .reduce(Math::max)
+                      .orElse(CommandLine.ExitCode.OK);
     }
 
     private List<CompletableFuture<Integer>> processFiles(Map<Path, BasicFileAttributes> pathMap) {
@@ -120,125 +127,109 @@ public class RecoderService {
     @SneakyThrows
     private CompletableFuture<Integer> processFile(Map.Entry<Path, BasicFileAttributes> entry) {
         Path sourceFilePath = entry.getKey();
-        BasicFileAttributes sourceFileAttributes = entry.getValue();
+        FileTime sourceFileTime = entry.getValue().lastModifiedTime();
 
         if (!sourceFilePath.toFile().exists()) {
             System.err.println(CommandLine.Help.Ansi.ON.string(STR."Can't process source file: @|red \{sourceFilePath}|@"));
-            return CompletableFuture.completedFuture(-1);
+            return CompletableFuture.completedFuture(CommandLine.ExitCode.SOFTWARE);
         }
 
         String command = this.recodeCommand.getCommand(sourceFilePath);
 
-        CompletableFuture<Integer> process = this.processFactory.execCommandAsync(command, sourceFilePath);
-        process.orTimeout(10, TimeUnit.MINUTES);
-
-        if (this.paraCoderParams.preserveFileTimestamp()) {
-            process.thenApply(preserveTimestampAction(command, sourceFileAttributes, sourceFilePath));
-        }
-
-        if (this.paraCoderParams.deleteSourceFilesToTrash()) {
-            process.thenApply(removeToTrashAction(sourceFilePath));
-        }
-
-        process.whenComplete(oneFileProcessCompleteAction(sourceFilePath));
-        process.handle(oneFileProcessResultAction());
-
-        return process;
+        return this.processFactory
+            .execCommandAsync(command, sourceFilePath)
+            .orTimeout(10, TimeUnit.MINUTES) //??
+            .thenApply(preserveTimestampAction(command, sourceFileTime))
+            .thenApply(removeToTrashAction(sourceFilePath))
+            .whenComplete(oneFileProcessCompleteAction(sourceFilePath))
+            .handle(oneFileProcessResultAction());
     }
 
-    @NonNull
-    private Function<Integer, Integer> preserveTimestampAction(String command,
-                                                               BasicFileAttributes sourceFileAttributes,
-                                                               Path sourceFilePath) {
-        return exitCode -> getTargetFile(command)
-            .map(file -> {
-                setTargetFileLastModifiedTime(file, sourceFileAttributes);
-                return exitCode;
-            })
-            .orElseThrow(() -> new RuntimeException(STR."Error on getting the target file for \{sourceFilePath}"));
+    private Function<Integer, Integer> preserveTimestampAction(String command, FileTime sourceFileTime) {
+        return exitCode -> {
+            if ((exitCode == CommandLine.ExitCode.OK) && this.paraCoderParams.preserveFileTimestamp()) {
+                File file = getTargetFile(command);
+                if (!setFileLastModifiedTime(file, sourceFileTime)) {
+                    throw new RuntimeException(STR."Error on setting timestamp to target file \{file}");
+                }
+            }
+            return exitCode;
+        };
     }
 
-    @NonNull
     private Function<Integer, Integer> removeToTrashAction(Path sourceFilePath) {
         return exitCode -> {
-            if (!removeFileToTrash(sourceFilePath)) {
+            if ((exitCode == CommandLine.ExitCode.OK)
+                && this.paraCoderParams.deleteSourceFilesToTrash()
+                && !removeFileToTrash(sourceFilePath)) {
                 throw new RuntimeException(STR."Error on deleting source file to the trash \{sourceFilePath}");
             }
             return exitCode;
-//            throw new RuntimeException(STR."Error on deleting source file to the trash \{sourceFilePath}");
         };
     }
 
-    @NonNull
     private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
         return (exitCode, t) -> {
-            if (t == null) {
-//                logger.info("success: {}", exitCode);
+            if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
+                log.debug("Completed OK {}", sourceFilePath);
                 System.out.println(CommandLine.Help.Ansi.ON.string(STR."""
                     Completed: @|blue \{sourceFilePath}|@"""));
             } else {
-//                logger.warn("failure: {}", t.getMessage());
+                log.error("Error on processing source file: {}", sourceFilePath, t);
                 System.err.println(CommandLine.Help.Ansi.ON.string(STR."""
-                Can't process source file: \{sourceFilePath}
-                @|red \{t.getMessage()}|@"""));
+                @|red Error on processing source file: \{sourceFilePath}|@"""));
             }
         };
     }
 
-    @NonNull
+
+    /**
+     * Convert exception to integer exit codes
+     */
     private BiFunction<Integer, Throwable, Integer> oneFileProcessResultAction() {
         return (exitCode, t) -> {
             if (t == null) {
                 return exitCode;
             } else {
-                return -1;
+                return CommandLine.ExitCode.SOFTWARE;
             }
         };
     }
 
-    @NonNull
-    private Optional<File> getTargetFile(String fileCommand) {
+    private File getTargetFile(String fileCommand) {
         var matcher = LAST_QUOTED_STRING_PATTERN.matcher(fileCommand);
         if (matcher.find()) {
             String targetFileName = matcher.group("targetFile");
-            return Optional.of(Path.of(targetFileName).toFile());
+            return Path.of(targetFileName).toFile();
         } else {
-            return Optional.empty();
+            throw new RuntimeException(STR."Error on getting the target file from command \{fileCommand}");
         }
     }
 
     /**
      * targetFile can be either a file or a directory
+     *
+     * @see BasicFileAttributeView#setTimes(FileTime, FileTime, FileTime)
      */
-    private void setTargetFileLastModifiedTime(File targetFile, BasicFileAttributes fileAttributes) {
-        long sourceFileLastModifiedTime = fileAttributes.lastModifiedTime().toMillis();
-        if (targetFile.lastModified() != sourceFileLastModifiedTime) {
+    private boolean setFileLastModifiedTime(File targetFile, FileTime sourceFileTime) {
+        long sourceFileLastModifiedTime = sourceFileTime.toMillis();
             // See also: java.nio.file.attribute.BasicFileAttributeView.setTimes
-            //noinspection ResultOfMethodCallIgnored
-            targetFile.setLastModified(sourceFileLastModifiedTime);
-        }
+        return (targetFile.lastModified() == sourceFileLastModifiedTime) || targetFile.setLastModified(sourceFileLastModifiedTime);
     }
 
     private void processDir(Map.Entry<Path, BasicFileAttributes> entry) {
         Path dirPath = entry.getKey();
         File dir = dirPath.toFile();
-        BasicFileAttributes dirAttributes = entry.getValue();
+        FileTime sourceDirTime = entry.getValue().lastModifiedTime();
 
         if (this.paraCoderParams.preserveDirTimestamp()) {
             System.out.println(CommandLine.Help.Ansi.ON.string(STR."Processing dir: @|cyan \{dirPath}|@"));
-            setTargetFileLastModifiedTime(dir, dirAttributes);
+            setFileLastModifiedTime(dir, sourceDirTime);
         }
     }
 
     private boolean removeFileToTrash(Path path) {
-//        Toolkit tk = Toolkit.getDefaultToolkit();
-//        // Standard beep is available.
-//        tk.beep();
-        try {
             return Desktop.getDesktop().moveToTrash(path.toFile());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }

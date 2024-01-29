@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <!--    <include resource="org/springframework/boot/logging/logback/defaults.xml" />-->
+    <property name="DEV_HOME" value="log"/>
+    <!--    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>-->
+<!--    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <target>System.out</target>-->
+<!--        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">-->
+<!--            <charset>UTF-8</charset>-->
+<!--            &lt;!&ndash;            <charset>cp866</charset>&ndash;&gt;-->
+<!--            &lt;!&ndash;            <pattern>%d{yyyy-MM-dd HH:mm:ss} %clr(%-5level) %logger{35} - %msg%n</pattern>&ndash;&gt;-->
+<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{35} - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${DEV_HOME}/paracoder.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>paracoder.%d{yyyy-MM-dd}.log</fileNamePattern>
+
+            <!-- keep 3 days' worth of history capped at 5MB total size -->
+            <maxHistory>3</maxHistory>
+            <totalSizeCap>5MB</totalSizeCap>
+
+        </rollingPolicy>
+
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
+
+<!--    <appender name="FILE_ASYNC" class="ch.qos.logback.classic.AsyncAppender">-->
+<!--        <queueSize>5000</queueSize>-->
+<!--        <discardingThreshold>0</discardingThreshold>-->
+<!--        <appender-ref ref="FILE" />-->
+<!--    </appender>-->
+
+    <logger name="by.rayden.paracoder" level="INFO"/>
+
+    <root level="WARN" additivity="false">
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <root level="OFF">
+        <appender-ref ref="consoleAppender" />
+    </root>
+</configuration>

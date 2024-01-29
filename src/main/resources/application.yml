@@ -1,10 +1,18 @@
-logging:
-  level:
-    root: ERROR
+#logging:
+#  level:
+#    root: ERROR
+##  charset:
+##      console: "UTF-8"
+
+#logging:
+#  config: logback.xml
 
 spring:
-  main:
-    banner-mode: "off"
+#  main:
+#    banner-mode: "off"
+  output:
+    ansi:
+      enabled: always
 #  output:
 #    ansi:
 #      enabled: detect

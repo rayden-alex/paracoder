@@ -43,8 +43,6 @@ public class ParaCoderMainCommand implements Callable<Integer> {
     private boolean preserveDirTimestamp = true;
 
     @Option(names = {"-r", "--recurse"},
-//        defaultValue = "false",
-//        showDefaultValue = CommandLine.Help.Visibility.ALWAYS,
         description = "Recursively process all input directories (default: ${DEFAULT-VALUE}).")
     @Getter
     private boolean recurse = false;
@@ -53,6 +51,12 @@ public class ParaCoderMainCommand implements Callable<Integer> {
         description = "Delete source files to the trash (default: ${DEFAULT-VALUE}).")
     @Getter
     private boolean deleteSourceFilesToTrash = true;
+
+    @Option(names = {"-t", "--thread-count"},
+        showDefaultValue = CommandLine.Help.Visibility.NEVER,
+        description = "The number of threads to use for recode (default: ${DEFAULT-VALUE}).")
+    @Getter
+    private int threadCount = 4;
 
     @Parameters(description = "Files and directories to recode")
     private List<Path> inputPathList;
