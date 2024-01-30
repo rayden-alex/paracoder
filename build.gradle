@@ -33,6 +33,7 @@ dependencies {
 	//to get rid of "unknown enum constant javax.annotation.meta.When.MAYBE" warning
     //compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 	compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.0'
+	compileOnly 'org.jetbrains:annotations:24.0.1'
 
 	implementation 'net.java.dev.jna:jna:5.13.0'
 

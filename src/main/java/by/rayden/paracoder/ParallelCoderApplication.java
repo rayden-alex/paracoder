@@ -25,14 +25,11 @@ public class ParallelCoderApplication {
         } catch (ClassNotFoundException _) {
         }
 
-        // https://stackoverflow.com/questions/21343529/all-my-java-applications-now-throw-a-java-awt-headlessexception
-        System.setProperty("java.awt.headless", "false");
-
-        // See org.springframework.boot.SpringApplication.configureHeadlessProperty
-        // It will only set a property if it doesn't exist already.
+        // Now I use OS native call to delete files to recycle bin (instead of Desktop.getDesktop().moveToTrash())
+        // so no need to set "java.awt.headless" property to init AWT.
         ConfigurableApplicationContext applicationContext = new SpringApplicationBuilder(ParallelCoderApplication.class)
             .web(WebApplicationType.NONE)
-            .headless(false)
+            .headless(true)
             .bannerMode(Banner.Mode.CONSOLE)
             .logStartupInfo(false)
             .run(args);

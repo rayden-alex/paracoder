@@ -1,4 +1,4 @@
 @NonNullApi
-package by.rayden.paracoder.config;
+package by.rayden.paracoder;
 
 import org.springframework.lang.NonNullApi;

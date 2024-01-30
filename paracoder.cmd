@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 > nul
 
-java --enable-preview -jar .\build\libs\ParaCoder-1.0.2.jar --recurse --thread-count=5 -d=false %*
+java --enable-preview -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -jar .\build\libs\ParaCoder-1.0.2.jar --recurse --thread-count=5 -d=true %*
 
 echo ERRORLEVEL:%ERRORLEVEL%
 

@@ -16,14 +16,15 @@ import java.util.Arrays;
 public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator {
     private final ParaCoderMainCommand paraCoderMainCommand;
     private final IFactory cliFactory; // auto-configured to inject PicocliSpringFactory
-    private final OsNative osNative;
+    private final UnicodeCommandLine unicodeCommandLine;
 
     private int exitCode;
 
-    public ParaCoderCliRunner(ParaCoderMainCommand paraCoderMainCommand, IFactory cliFactory, OsNative osNative) {
+    public ParaCoderCliRunner(ParaCoderMainCommand paraCoderMainCommand, IFactory cliFactory,
+                              UnicodeCommandLine unicodeCommandLine) {
         this.paraCoderMainCommand = paraCoderMainCommand;
         this.cliFactory = cliFactory;
-        this.osNative = osNative;
+        this.unicodeCommandLine = unicodeCommandLine;
     }
 
     /**
@@ -32,12 +33,12 @@ public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator 
      */
     @Override
     public void run(String... args) {
-        String[] fixedArgs = this.osNative.getCommandLineArguments(args);
-        log.info("Unicode command line args: {}", Arrays.toString(fixedArgs));
+        String[] unicodeArgs = this.unicodeCommandLine.getArguments(args);
+        log.info("Unicode command line args: {}", Arrays.toString(unicodeArgs));
 
-        try (AnsiConsole ansi = AnsiConsole.windowsInstall()) {
+        try (AnsiConsole _ = AnsiConsole.windowsInstall()) {
             // TODO: Log WARN PicocliSpringFactory - Unable to get bean of class interface java.util.List, using fallback factory
-            this.exitCode = new CommandLine(this.paraCoderMainCommand, this.cliFactory).execute(fixedArgs);
+            this.exitCode = new CommandLine(this.paraCoderMainCommand, this.cliFactory).execute(unicodeArgs);
         }
     }
 

@@ -2,12 +2,12 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.cli.command.ParaCoderMainCommand;
 import by.rayden.paracoder.config.PatternProperties;
+import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitOption;
@@ -45,14 +45,16 @@ public class RecoderService {
     private final PatternProperties patternProperties;
     private final ProcessFactory processFactory;
     private final RecodeCommand recodeCommand;
+    private final OsNative osNative;
 
     private ParaCoderMainCommand.Params paraCoderParams;
 
     public RecoderService(ProcessFactory processFactory, RecodeCommand recodeCommand,
-                          PatternProperties patternProperties) {
+                          PatternProperties patternProperties, OsNative osNative) {
         this.processFactory = processFactory;
         this.recodeCommand = recodeCommand;
         this.patternProperties = patternProperties;
+        this.osNative = osNative;
     }
 
     /**
@@ -67,6 +69,7 @@ public class RecoderService {
             Integer maxExitCode = asyncProcessFiles(pathMap);
             processDirs(pathMap);
 
+            System.out.println();
             System.out.println(CommandLine.Help.Ansi.ON.string(STR."@|blue Max exit code: \{maxExitCode}|@"));
             return maxExitCode;
         } catch (Exception e) {
@@ -84,7 +87,7 @@ public class RecoderService {
         for (Path inputPath : this.paraCoderParams.inputPathList()) {
             Files.walkFileTree(inputPath, fileVisitOptions, depth, fileVisitor);
         }
-        log.debug("PathTree: {}", fileVisitor.getPathTree());
+        log.debug("PathTree: {}", fileVisitor.getPathTree().keySet());
         return fileVisitor.getPathTree();
     }
 
@@ -118,6 +121,7 @@ public class RecoderService {
      * The directories must be processed in reversed orders, starting at the deepest depth.
      */
     private void processDirs(final Map<Path, BasicFileAttributes> pathMap) {
+        System.out.println();
         pathMap.entrySet().stream()
                .filter(entry -> entry.getValue().isDirectory())
                .sorted(Map.Entry.comparingByKey(REVERSED_PATH_COMPARATOR))
@@ -159,10 +163,8 @@ public class RecoderService {
 
     private Function<Integer, Integer> removeToTrashAction(Path sourceFilePath) {
         return exitCode -> {
-            if ((exitCode == CommandLine.ExitCode.OK)
-                && this.paraCoderParams.deleteSourceFilesToTrash()
-                && !removeFileToTrash(sourceFilePath)) {
-                throw new RuntimeException(STR."Error on deleting source file to the trash \{sourceFilePath}");
+            if ((exitCode == CommandLine.ExitCode.OK) && this.paraCoderParams.deleteSourceFilesToTrash()) {
+                deleteFileToTrash(sourceFilePath);
             }
             return exitCode;
         };
@@ -228,8 +230,9 @@ public class RecoderService {
         }
     }
 
-    private boolean removeFileToTrash(Path path) {
-            return Desktop.getDesktop().moveToTrash(path.toFile());
+    @SneakyThrows
+    private void deleteFileToTrash(Path path) {
+        this.osNative.deleteToTrash(path.toFile());
     }
 
 }

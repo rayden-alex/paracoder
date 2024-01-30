@@ -39,7 +39,7 @@
 <!--        <appender-ref ref="FILE" />-->
 <!--    </appender>-->
 
-    <logger name="by.rayden.paracoder" level="INFO"/>
+    <logger name="by.rayden.paracoder" level="DEBUG"/>
 
     <root level="WARN" additivity="false">
         <appender-ref ref="FILE"/>
