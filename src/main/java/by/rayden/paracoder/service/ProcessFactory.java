@@ -1,6 +1,7 @@
 package by.rayden.paracoder.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
@@ -14,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class ProcessFactory {
     private final RecoderThreadPool pool;
 
-    public ProcessFactory(RecoderThreadPool pool) {
+    public ProcessFactory(@Lazy RecoderThreadPool pool) {
         this.pool = pool;
     }
 
@@ -41,8 +42,4 @@ public class ProcessFactory {
         }
     }
 
-    public void init() {
-        // TODO Make bean initialisation by Spring
-        this.pool.init();
-    }
 }

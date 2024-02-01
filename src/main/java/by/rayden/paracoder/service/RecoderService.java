@@ -62,7 +62,6 @@ public class RecoderService {
      */
     public int recode(ParaCoderMainCommand.Params paraCoderParams) {
         this.paraCoderParams = paraCoderParams;
-        this.processFactory.init();
 
         try {
             Map<Path, BasicFileAttributes> pathMap = buildAbsolutePathTree();
