@@ -34,9 +34,25 @@ public class ParallelCoderApplication {
             .logStartupInfo(false)
             .run(args);
 
+        createShutdownHook();
+
         int exitCode = SpringApplication.exit(applicationContext);
         log.info("ParaCoder completed.");
         System.exit(exitCode);
     }
 
+    private static void createShutdownHook() {
+        Thread shutdownHook = new Thread(ParallelCoderApplication::destroyDescendantOnMainProcessExit);
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+    }
+
+    private static void destroyDescendantOnMainProcessExit() {
+        ProcessHandle.current().descendants()
+                     .forEach(processHandle -> {
+                         String processInfo = processHandle.info().commandLine()
+                                                           .orElseGet(() -> "PID:" + processHandle.pid());
+                         log.info("Descendant process to destroy: {}", processInfo);
+                         processHandle.destroyForcibly();
+                     });
+    }
 }
