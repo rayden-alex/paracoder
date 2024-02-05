@@ -50,7 +50,7 @@ public class ParaCoderMainCommand implements Callable<Integer> {
     @Option(names = {"-d", "--delete-to-trash"},
         description = "Delete source files to the trash (default: ${DEFAULT-VALUE}).")
     @Getter
-    private boolean deleteSourceFilesToTrash = true;
+    private boolean deleteSourceFilesToTrash = false;
 
     @Option(names = {"-t", "--thread-count"},
         showDefaultValue = CommandLine.Help.Visibility.NEVER,
