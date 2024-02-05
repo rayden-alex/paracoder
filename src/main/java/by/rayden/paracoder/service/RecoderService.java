@@ -1,6 +1,6 @@
 package by.rayden.paracoder.service;
 
-import by.rayden.paracoder.cli.command.ParaCoderMainCommand;
+import by.rayden.paracoder.cli.command.CommandController;
 import by.rayden.paracoder.config.PatternProperties;
 import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
@@ -47,7 +47,7 @@ public class RecoderService {
     private final RecodeCommand recodeCommand;
     private final OsNative osNative;
 
-    private ParaCoderMainCommand.Params paraCoderParams;
+    private CommandController.Params paraCoderParams;
 
     public RecoderService(ProcessFactory processFactory, RecodeCommand recodeCommand,
                           PatternProperties patternProperties, OsNative osNative) {
@@ -60,7 +60,7 @@ public class RecoderService {
     /**
      * Not thread safe! (because of this.paraCoderParams)
      */
-    public int recode(ParaCoderMainCommand.Params paraCoderParams) {
+    public int recode(CommandController.Params paraCoderParams) {
         this.paraCoderParams = paraCoderParams;
 
         try {

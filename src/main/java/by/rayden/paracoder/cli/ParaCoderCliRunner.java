@@ -1,6 +1,6 @@
 package by.rayden.paracoder.cli;
 
-import by.rayden.paracoder.cli.command.ParaCoderMainCommand;
+import by.rayden.paracoder.cli.command.CommandController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeGenerator;
@@ -14,15 +14,15 @@ import java.util.Arrays;
 @Component
 @Slf4j
 public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator {
-    private final ParaCoderMainCommand paraCoderMainCommand;
+    private final CommandController commandController;
     private final IFactory cliFactory; // auto-configured to inject PicocliSpringFactory
     private final UnicodeCommandLine unicodeCommandLine;
 
     private int exitCode;
 
-    public ParaCoderCliRunner(ParaCoderMainCommand paraCoderMainCommand, IFactory cliFactory,
+    public ParaCoderCliRunner(CommandController commandController, IFactory cliFactory,
                               UnicodeCommandLine unicodeCommandLine) {
-        this.paraCoderMainCommand = paraCoderMainCommand;
+        this.commandController = commandController;
         this.cliFactory = cliFactory;
         this.unicodeCommandLine = unicodeCommandLine;
     }
@@ -38,7 +38,7 @@ public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator 
 
         try (AnsiConsole _ = AnsiConsole.windowsInstall()) {
             // TODO: Log WARN PicocliSpringFactory - Unable to get bean of class interface java.util.List, using fallback factory
-            this.exitCode = new CommandLine(this.paraCoderMainCommand, this.cliFactory).execute(unicodeArgs);
+            this.exitCode = new CommandLine(this.commandController, this.cliFactory).execute(unicodeArgs);
         }
     }
 

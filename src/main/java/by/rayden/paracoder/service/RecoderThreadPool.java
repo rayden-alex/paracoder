@@ -1,6 +1,6 @@
 package by.rayden.paracoder.service;
 
-import by.rayden.paracoder.cli.command.ParaCoderMainCommand;
+import by.rayden.paracoder.cli.command.CommandController;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -24,14 +24,14 @@ public class RecoderThreadPool {
     private static final RejectedExecutionHandler REJECTED_HANDLER = new ThreadPoolExecutor.CallerRunsPolicy();
     private static final LinkedBlockingQueue<Runnable> WORK_QUEUE = new LinkedBlockingQueue<>(WORK_QUEUE_CAPACITY);
 
-    private final ParaCoderMainCommand paraCoderMainCommand;
+    private final CommandController commandController;
 
     @Getter
     private ExecutorService executor;
 
 
-    public RecoderThreadPool(ParaCoderMainCommand paraCoderMainCommand) {
-        this.paraCoderMainCommand = paraCoderMainCommand;
+    public RecoderThreadPool(CommandController commandController) {
+        this.commandController = commandController;
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -41,7 +41,7 @@ public class RecoderThreadPool {
 
     @PostConstruct
     public void init() {
-        int threadCount = this.paraCoderMainCommand.getThreadCount();
+        int threadCount = this.commandController.getThreadCount();
 
         this.executor = new ThreadPoolExecutor(threadCount, threadCount, 0L, TimeUnit.MILLISECONDS,
             WORK_QUEUE, threadFactory("cf-async-"), REJECTED_HANDLER);

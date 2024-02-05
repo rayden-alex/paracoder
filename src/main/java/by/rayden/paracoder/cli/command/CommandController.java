@@ -29,7 +29,7 @@ import java.util.concurrent.Callable;
     usageHelpWidth = 120,
     defaultValueProvider = CommandLine.PropertiesDefaultProvider.class,
     subcommands = Sub.class)
-public class ParaCoderMainCommand implements Callable<Integer> {
+public class CommandController implements Callable<Integer> {
     private final RecoderService recoderService;
 
     @Option(names = {"-pf", "--preserve-file-timestamp"},
@@ -62,7 +62,7 @@ public class ParaCoderMainCommand implements Callable<Integer> {
     private List<Path> inputPathList;
 
 
-    public ParaCoderMainCommand(RecoderService recoderService) {
+    public CommandController(RecoderService recoderService) {
         this.recoderService = recoderService;
     }
 

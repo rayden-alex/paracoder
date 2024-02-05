@@ -1,6 +1,6 @@
 package by.rayden.paracoder;
 
-import by.rayden.paracoder.cli.command.ParaCoderMainCommand;
+import by.rayden.paracoder.cli.command.CommandController;
 import by.rayden.paracoder.cli.command.Sub;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -18,20 +18,20 @@ import static picocli.CommandLine.ParseResult;
 
 @SpringBootTest(webEnvironment = NONE, classes = ParallelCoderApplication.class)
 @Disabled
-public class ParaCoderMainCommandTest {
+public class CommandControllerTest {
     @Autowired
     private IFactory cliFactory;
 
     @Autowired
-    private ParaCoderMainCommand paraCoderMainCommand;
+    private CommandController commandController;
 
     @Test
     public void testParsingCommandLineArgs() {
-        ParseResult parseResult = new CommandLine(this.paraCoderMainCommand, this.cliFactory)
+        ParseResult parseResult = new CommandLine(this.commandController, this.cliFactory)
             .parseArgs("-x", "abc", "sub", "-y", "123");
 
 //        assertEquals("abc", this.paraCoderMainCommand.x);
-        assertNull(this.paraCoderMainCommand.getInputPathList());
+        assertNull(this.commandController.getInputPathList());
 
         assertTrue(parseResult.hasSubcommand());
         ParseResult subResult = parseResult.subcommand();
@@ -52,7 +52,7 @@ public class ParaCoderMainCommandTest {
             "Commands:%n" +
             "  sub%n");
 
-        String actual = new CommandLine(this.paraCoderMainCommand, this.cliFactory)
+        String actual = new CommandLine(this.commandController, this.cliFactory)
             .getUsageMessage(Help.Ansi.AUTO);
         assertEquals(expected, actual);
     }
