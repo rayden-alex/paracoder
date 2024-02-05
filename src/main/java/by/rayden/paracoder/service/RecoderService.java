@@ -72,7 +72,7 @@ public class RecoderService {
             System.out.println(CommandLine.Help.Ansi.ON.string(STR."@|blue Max exit code: \{maxExitCode}|@"));
             return maxExitCode;
         } catch (Exception e) {
-            log.error("Recode error: {}",e.getMessage(), e);
+            log.error("Recode error: {}", e.getMessage(), e);
             System.err.println(CommandLine.Help.Ansi.ON.string(STR."Error: @|red \{e.getMessage()}|@"));
             return CommandLine.ExitCode.SOFTWARE;
         }
@@ -140,12 +140,12 @@ public class RecoderService {
         String command = this.recodeCommand.getCommand(sourceFilePath);
 
         return this.processFactory
-            .execCommandAsync(command, sourceFilePath)
-            .orTimeout(10, TimeUnit.MINUTES) //??
-            .thenApply(preserveTimestampAction(command, sourceFileTime))
-            .thenApply(removeToTrashAction(sourceFilePath))
-            .whenComplete(oneFileProcessCompleteAction(sourceFilePath))
-            .handle(oneFileProcessResultAction());
+                   .execCommandAsync(command, sourceFilePath)
+                   .orTimeout(10, TimeUnit.MINUTES) //??
+                   .thenApply(preserveTimestampAction(command, sourceFileTime))
+                   .thenApply(removeToTrashAction(sourceFilePath))
+                   .whenComplete(oneFileProcessCompleteAction(sourceFilePath))
+                   .handle(oneFileProcessResultAction());
     }
 
     private Function<Integer, Integer> preserveTimestampAction(String command, FileTime sourceFileTime) {
@@ -214,7 +214,7 @@ public class RecoderService {
      */
     private boolean setFileLastModifiedTime(File targetFile, FileTime sourceFileTime) {
         long sourceFileLastModifiedTime = sourceFileTime.toMillis();
-            // See also: java.nio.file.attribute.BasicFileAttributeView.setTimes
+        // See also: java.nio.file.attribute.BasicFileAttributeView.setTimes
         return (targetFile.lastModified() == sourceFileLastModifiedTime) || targetFile.setLastModified(sourceFileLastModifiedTime);
     }
 

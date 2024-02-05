@@ -24,7 +24,8 @@ public class ProcessFactory {
     }
 
     private int exec(String recodeCommand, Path sourceFilePath) {
-        ProcessBuilder processBuilder = new ProcessBuilder().inheritIO().command("cmd", "/c", recodeCommand);
+        log.debug("Recode command: {}", recodeCommand);
+        ProcessBuilder processBuilder = new ProcessBuilder().inheritIO().command("cmd", "/d", "/c", recodeCommand);
         String threadName = Thread.currentThread().getName();
         System.out.println(CommandLine.Help.Ansi.ON.string(STR."Processing source file: @|yellow \{threadName}|@ @|blue \{sourceFilePath}|@"));
         try {
