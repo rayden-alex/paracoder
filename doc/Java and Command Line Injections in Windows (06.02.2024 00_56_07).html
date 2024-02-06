@@ -1,0 +1,512 @@
+<!DOCTYPE html> <html lang=en-us><!--
+ Page saved with SingleFile 
+ url: https://code-white.com/blog/2016-02-java-and-command-line-injections-in-windows/ 
+ saved date: Tue Feb 06 2024 00:56:07 GMT+0300 (Москва, стандартное время)
+--><meta charset=utf-8>
+<meta name=viewport content="width=device-width, initial-scale=1">
+<title>CODE WHITE - Finest Hacking</title>
+<meta name=description content="This was originally posted on blogger here.
+Everyone knows that incorporating user provided fragments into a command line is dangerous and may lead to command injection. That’s why in Java many suggest using ProcessBuilder instead where the program’s arguments are supposed to be passed discretely in separate strings.
+However, in Windows, processes are created with a single command line string. And since there are different and seemingly confusing parsing rules for different runtime environments, proper quoting seems to be likewise complicated. ">
+<link rel=canonical href=https://code-white.com/blog/2016-02-java-and-command-line-injections-in-windows/>
+<meta property=og:title content="
+
+CODE WHITE | Java and Command Line Injections in Windows
+
+">
+<meta property=og:description content="
+
+
+
+">
+<meta property=og:type content="
+
+article
+
+">
+<meta property=og:url content=https://code-white.com/blog/2016-02-java-and-command-line-injections-in-windows/><meta property=og:image content=https://code-white.com/images/featured.png>
+<style>.navbar{display:flex;align-items:center;justify-content:space-between;background:#111;height:100%;color:#fff;box-sizing:border-box}.navbar__left{display:flex;flex-direction:row;justify-content:flex-start;align-items:center}.link-title{padding-left:20px;width:100%;height:100%;font-weight:bold;font-size:x-large}.navbar__right{display:flex;flex-direction:row;justify-content:space-between;align-items:center;gap:5px;margin-right:30px;margin-top:10px}.header_menu-icon{width:100%}.header_menu-icon-wrapper{width:50px;height:50px;color:white;text-align:center;padding:14px;box-sizing:border-box}.header_menu-icon-wrapper:hover{background-color:#333}@media (max-width:740px){}</style>
+<style>body{background-color:#111;color:#fff;margin:0;font-family:"Roboto",sans-serif;box-sizing:border-box;font-size:105%}a{color:#fff}.site-clamp{display:flex;flex-direction:row;justify-content:center;align-items:center;width:100vw;height:100vh;box-sizing:border-box;background-color:#151515}.site-wrapper{box-sizing:border-box;height:100%;width:100%;max-width:1920px;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;background-color:#111;position:absolute}.nav-bar-wrapper{width:100%}main{flex-grow:100;width:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;overflow-y:hidden;position:relative}</style>
+<style>@media (max-width:800px){}</style>
+<style>a{text-decoration:underline}a:hover{color:#888}img{width:100%;max-width:100%;height:auto}.single_blog-post-wrapper{width:100%;height:100%;display:flex;flex-direction:column;justify-content:stretch;align-items:center;box-sizing:border-box;overflow:scroll;padding-top:60px;position:relative}.single_blog-post-wrapper::-webkit-scrollbar{display:none}.single_blog-post-header{position:absolute;top:60px;left:0;width:80px;max-width:1900px;height:60px;box-sizing:border-box;display:flex;flex-direction:row;justify-content:flex-end;align-items:center;z-index:100}.single_blog-post_author-wrapper{box-sizing:border-box;display:flex;flex-direction:row;justify-content:flex-end;align-items:center}.blog-header_author{text-decoration:none;text-align:center}.blog-header_author_separator{padding-inline:4px}.single_blog-post-header-button{height:50px;width:50px;color:white;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;border-radius:4px;padding:8px;background-color:#0008}.single_blog-post-header-button:hover{background-color:#6666}.single_blog-post-header-button>*{height:100%;width:100%}.single_blog-post-footer{position:absolute;bottom:30px;right:0;width:120px;height:60px;box-sizing:border-box;display:flex;flex-direction:row;justify-content:flex-start;align-items:center;z-index:100}.single_blog-post-footer-button{height:50px;width:50px;border:0px solid;color:white;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:center;border-radius:4px;padding:8px;background-color:#0008}.single_blog-post-footer-button:hover{background-color:#6666}.single_blog-post-footer-button>*{height:100%;width:100%}.arrow_up{transform:rotate(90deg)}.single_blog-post-content{display:flex;flex-direction:column;justify-content:flex-start;align-items:flex-start;width:100%;max-width:700px;box-sizing:border-box;padding:0px 15px 60px 15px}.article-header{border-bottom:1px solid #fff;width:100%;display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:10px 0}.single-blog-post-content-wrapper{width:100%}.highlight{width:100%;height:auto;box-sizing:border-box}.highlight>pre{overflow-x:auto;width:100%;height:auto;box-sizing:border-box;padding:10px}p>code,li>code{line-break:anywhere}code{overflow-x:auto;width:100%;height:auto;box-sizing:border-box;padding:3px;border-radius:4px;background-color:#272822}@-webkit-keyframes zoom{from{-webkit-transform:scale(0)}to{-webkit-transform:scale(1)}}@keyframes zoom{from{transform:scale(0)}to{transform:scale(1)}}@media only screen and (max-width:801px){.fixed-soc-med-dock{visibility:hidden}}@media only screen and (max-width:700px){}@media (min-width:601px){.single_blog-post-footer{display:unset}}@media (max-width:600px){.single_blog-post-footer{display:none}.article-header{flex-direction:column;justify-content:space-between;gap:10px;align-items:flex-start}}</style>
+<style>@media (max-width:700px){}@media (min-width:701px){}@media (max-width:1000px){}@media (min-width:1001px){}</style>
+<style>@media (max-width:740px){}</style>
+<style>@media (min-width:601px){}@media (max-width:600px){}</style>
+<style>.sharebuttons-sf{display:flex;flex-direction:column;justify-content:space-between;align-items:center;gap:20px;position:absolute;left:0;top:50%;padding-left:15px;z-index:50}.sharebuttons-sf div a{margin:0 0.5rem;display:block}.sharebuttons-sf div a svg{width:auto;height:30px;display:block}.will-change_sf{fill:#fff}nav.sharebuttons-sf div>a:hover .will-change_sf{fill:#666}</style>
+<link rel=alternate type=application/rss+xml href=https://code-white.com/index.xml title="CODE WHITE - Finest Hacking - Cumulated InfoSec feed">
+<link rel=alternate type=application/rss+xml href=https://code-white.com/blog/index.xml title="CODE WHITE - Finest Hacking - InfoSec Blog">
+<meta name=referrer content=no-referrer><link type=image/x-icon rel="shortcut icon" href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAJ1AAACdQF32cIiAAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48GgAAAQZJREFUOI2V0U0rRGEUB/DfGHnLbJRSo1Cs5BtYmFKsyU5slaWNrY212M3Kl8DaSxbKWknYWxGhMBZzTHfGvXf4b859nv/LOee5RdnoxBd6MYNJPOE5KSpkmMexjAGM4gx7eM3rNocdXKOGS8xH94swH2MLlfA0MBSmGq6wgo6WSZdwk9CVkwE9+AyilDWm+jvU8BGeRpc33MZ3x29f06pwF54m8WnU/pyArhZtU8Bh1LGcgImoB2lkNx6wnhOwi0exf+sE76hiNsNcCK4q9k9DCfcYTOEqeFH/5blYxHbK/RE22pl/sImpxHkBJyj+NaCAVQxjBOfS12qLaexH0L9Rxhr68kTftZYvLVY7E6EAAAAASUVORK5CYII="><style>.sf-hidden{display:none!important}</style><meta http-equiv=content-security-policy content="default-src 'none'; font-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline'; media-src 'self' data:; script-src 'unsafe-inline' data:; object-src 'self' data:; frame-src 'self' data:;"><style>img[src="data:,"],source[src="data:,"]{display:none!important}</style></head>
+ 
+ <body>
+ <div class=site-clamp>
+ <div class=site-wrapper>
+ <div class=nav-bar-wrapper><header>
+ <div class=navbar role=navigation>
+ <div class=navbar__left>
+ <div class=header_menu-icon-wrapper>
+ <img src="data:image/svg+xml;base64,CjxzdmcKICAgd2lkdGg9IjUwMCIKICAgaGVpZ2h0PSI1MDAiCiAgIHZpZXdCb3g9IjAgMCAxMzIuMjkxNjcgMTMyLjI5MTY3IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmc1IgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMyIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSI+CiAgICA8ZwogICAgICAgaWQ9ImcxMDI0IgogICAgICAgdHJhbnNmb3JtPSJtYXRyaXgoMS4yMzEwMDU5LDAsMCwxLjIzMTAwNTksLTE3LjQwMzkyNywtNy45ODEwMjA1KSIKICAgICAgIHN0eWxlPSJzdHJva2U6I2ZmZmZmZjtzdHJva2Utb3BhY2l0eToxIj4KICAgICAgPHBhdGgKICAgICAgICAgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MTMuMjI5MjtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgICAgZD0iTSAyMC43NTI1NzcsMjcuODk2OTA2IEggMTE0Ljk4OTY5IgogICAgICAgICBpZD0icGF0aDg2OSIgLz4KICAgICAgPHBhdGgKICAgICAgICAgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6I2ZmZmZmZjtzdHJva2Utd2lkdGg6MTMuMjI5MjtzdHJva2UtbGluZWNhcDpyb3VuZDtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgICAgZD0iTSAyMC43NTI1NzcsNjAuMjE2NDk2IEggMTE0Ljk4OTY5IgogICAgICAgICBpZD0icGF0aDEwMTciIC8+CiAgICAgIDxwYXRoCiAgICAgICAgIHN0eWxlPSJmaWxsOm5vbmU7c3Ryb2tlOiNmZmZmZmY7c3Ryb2tlLXdpZHRoOjEzLjIyOTI7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWxpbmVqb2luOm1pdGVyO3N0cm9rZS1taXRlcmxpbWl0OjQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjEiCiAgICAgICAgIGQ9Ik0gMjAuNzUyNTc3LDkyLjUzNjA4MSBIIDExNC45ODk2OSIKICAgICAgICAgaWQ9InBhdGgxMDE5IiAvPgogICAgPC9nPgogIDwvZz4KPC9zdmc+Cg==" alt=menu-burger class=header_menu-icon>
+ </div>
+ </div>
+ 
+ <div class=link-title>Blog</div>
+ 
+ 
+ 
+ <div class=navbar__right>
+ <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+PCEtLSBHZW5lcmF0b3I6IEdyYXZpdC5pbyAtLT48c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHN0eWxlPSJpc29sYXRpb246aXNvbGF0ZSIgdmlld0JveD0iMCAwIDgwMCAxMDQyLjQ2IiB3aWR0aD0iODAwcHQiIGhlaWdodD0iMTA0Mi40NnB0Ij48ZGVmcz48Y2xpcFBhdGggaWQ9Il9jbGlwUGF0aF9hdGR3RzJHR3p0RkVqemNHbkk4enI3cm8xQlFid0x0ciI+PHJlY3Qgd2lkdGg9IjgwMCIgaGVpZ2h0PSIxMDQyLjQ2Ii8+PC9jbGlwUGF0aD48L2RlZnM+PHN3aXRjaD48ZyBjbGlwLXBhdGg9InVybCgjX2NsaXBQYXRoX2F0ZHdHMkdHenRGRWp6Y0duSTh6cjdybzFCUWJ3THRyKSI+PGc+PHBhdGggZD0iIE0gNDY2LjAwOSA5OS4wOTYgTCA2NTcuNzk1IDAuMDA0IEMgNjU4LjQ1OSAtMC40MTkgNTM0LjM4MyAzNS4yNDcgMzg0Ljk2MSA3OC40NTYgQyA0MTAuODUgODQuOTE0IDQzNS4yOTEgOTEuNTUyIDQ2Ni4wMDkgOTkuMjE2IiBmaWxsPSJyZ2IoMjU1LDI1NSwyNTUpIi8+PHBhdGggZD0iIE0gNDA2LjA4MyA5NDcuNzEzIEwgMzgxLjI4IDkyNy4zMTUgQyAyODkuMTg4IDg1MS4wOTUgMTI2LjEyNyA2NjEuMjQgMTQxLjg3OCAyNjYuNjIyIEwgMzk2LjEyNSAxMzQuMjE4IEwgMzI1LjA5NSA5NS42NTYgTCAwLjg0NCAxODkuMTk1IEMgLTUuMTkxIDIxMy4zMzUgMTAuOTgzIDcxMC4xMjIgMzk4LjE3NyA5NTUuOTIgTCA0MDYuMTQzIDk0Ny43MTMiIGZpbGw9InJnYigyNTUsMjU1LDI1NSkiLz48cGF0aCBkPSIgTSAyNzAuMTE4IDU3LjIxNCBDIDI5OC4zMDEgNjMuNjExIDc5OS43OTUgMTg5LjE5NSA3OTkuNzk1IDE4OS4xOTUgQyA4MDUuMTA1IDM2MC4xMDIgNzA4LjQyOCA3ODcuOTcxIDM3OS43NzEgMTAxMC4yMzMgQyAzNTkuMDQyIDEwMjMuNDU1IDMzNi44NzEgMTAzNC4yNjcgMzEzLjY5IDEwNDIuNDU5IEwgMjk4LjMwMSAxMDQyLjQ1OSBDIDI5Ni42NzEgMTA0My4wMDMgNjkwLjU2NCA3ODIuOTYyIDY1MC42NzQgMjY2LjU2MiBMIDI3MC4xMTggNTcuMjE0IFogIiBmaWxsPSJyZ2IoMjU1LDI1NSwyNTUpIi8+PC9nPjwvZz48Zm9yZWlnbk9iamVjdCByZXF1aXJlZEV4dGVuc2lvbnM9Imh0dHA6Ly9ucy5ncmF2aXQuaW8vIj48Z3Jhdml0RGVzaWduZXI6Z3Jhdml0RWxlbWVudFJlZiB4bWxuczpncmF2aXREZXNpZ25lcj0iaHR0cDovL25zLmdyYXZpdC5pby8iIHhsaW5rOmhyZWY9IiM3SGg0eWR3ZnB6RzlVNHQ4TDV3WVJNZFluVm0yUkdrUSIvPjwvZm9yZWlnbk9iamVjdD48L3N3aXRjaD48Z3Jhdml0RGVzaWduZXI6Z3Jhdml0R3JhcGhpY1NvdXJjZSB4bWxuczpncmF2aXREZXNpZ25lcj0iaHR0cDovL25zLmdyYXZpdC5pby8iIGlkPSI3SGg0eWR3ZnB6RzlVNHQ4TDV3WVJNZFluVm0yUkdrUSIgdmVyc2lvbj0iMSI+PCFbQ0RBVEFbZU1LY3c0MVdhOEtQd3FMRGloYkR2U3MzdzR6RGljTzlNazdDaHpkVUp6YzVQTUtGdzZiQ29jS2x3N0xEa01PT1pNS0N3NGhMRU1LUXdvZkNpTUtUdzduRHJ4ZkRsTUsyd3FmRGp6M0RpVXh5d3I4Y1RVVTJ3clhEbDJMRGw4S3V3clVLd3I4amZ5TERqMGpEcVVVQk1rSER2a3gyUThPUXdvVXJ3ckU2RHNPaEg4T0l3N1BEcThPM3c2dkN2TUtYdzZkWnc1MDhNc09XWVcvRGpzT1FJU3pDbzhLUENNT3Z3NmZEcVIvQ2t4czR3cXJDaXNLMmZHQkx3cFBEcU1PYXc0VUh3N2JEa212RG9zT0hQTUtYTE1LU1l6YkNoc08xS2NPeXdwckNwc0txd3BIRHA4T3Z3b2pDbjNuRHRYQXh3N3pEbGwvRHNNS0JHU25DbXlGOGZVWERwQm5DbVVERGtzS3Rha3ZEdXNPUEFNTzZOQXhOd3FuQ3RoVkh3NXBtVGs3RGp3b1F3ckhDcWhGUHc2ekNtc0t0SWlIRGhrTVpJRjhud3E5SXc0ZkRtQUlrSk1PUXdxYkRuQnZEamprQ0htdkNwc09nQlRzMHdyakRxWHJEdFFFa0RTbkN1bURDdXNLWk1zT1J3NEViVXNLVVlURENwaXpEZ01LT3c2TmFhVURDamxUQ25NT0t3NWtRdzZ2RHAxbkR1aWpDZ1ZZaVI4T3pFMjg5d3IvQ3VFQlB3NUhDdGNLbWFYSnFKc0thd3BBMWJBL0RreUZsWE1PeEhsWERteEU1d3JzaFI4TzJ3cmxmYkNBVEJUa3F3NTNEbU1LdkN5UnF3cXQrWno4NkJ6bkRwMFREc1Zocnc2SENoc0tRSEExVndxYkNqVzRTTE1PWnc0M0R0R1U2d3J2Q3N3dkNqY0svRzF0VFhzS3B3cjVPd3BBcUNNS2JjOEtEUE1PbmJjS1dYU012dzdmRG8ySnN3N0REcXpERG0xVERvWEJCUDhLaEJNT0p3NklVd281Uk5NT053cEEwTTBIQ2g4T3Z3Ny9EbnNPOVFtSERqQk5PVWlUQ2ljS3pORUVUdzZ6RHBBdEJQV0VZQzJoQUVBeEd3ckUwUGNLUWZzT0x3cncrd3JodHc2RnR3cWZDazhLOHc1RnZ3cmZEbmpaOFk4S2V3cWQ1dzd0QkVHSENrbVhEczBmRHFpTlR3cWxvUFhQQ2hzT3dXem5DckFJUlBzSzl3NklVTmNLNXdvL0NyOE9Jd28vRG9YbkR2eDRKd3AzRGs4S0xJOEtoS1dYQ2xzSzFGRVhEcW5yQ3ZXOE13cFU1dzVvOENXa2lCTUtqZk1LK0JXSENxTUtPd3B3VXc1ZGdNTU9tdzduQ3RqRER0VVBDbTBobERuckNvc0tiZHNLRndwczF3cVJKTWc4VmZ4RERxY095dzZBRnc2bkR1c0szUmNPS2NjT2NCc08yd3JuQ3I4S213NGJEbXg0U3dvZkR2Y0tGd3BYQ3BSM0RsUUpadzROeHdxQVZCY0t4dzQvRGxNS093cXZDdk1PdHc3WUZ3NWpEbDhLOXc0YytHeGJEdkN6RGt3ckR1c09BdzdWMXc0UERxU0FDS1FndVRzT2NPY0ttd29kbGFzT1NGV1ZodzVCcXdxRENxSGNaTFRWSndvWlV3clhDa2NPR0o4S09WTUtsSW5vd3c2TEN1TUtsd3FUQ3ZsSERoY0t0d3JURG1NS0VZbXAxdzREQ2hzS053NFBDaWhSRkMwRTd3b2pDcHNPdXc3UENsY09IdzU5bFpNT3R3N2MyUERJS3dwWENxamZDcWtQQ2xzSzZZMVhDcE1PMFVHUnF3cDA0RUJMQ3JobkNoR2x1dzZobkNjS3VHVkxDc2NLOUNEZ0pJOE9idzQwVkYxQlF3b2Q5dzZaWHc2OVdOUXJDbGNPS1VzS0J3cmpDbk1PYXc0M0NoY09xd3BKVndwY2t3NlVTUmNPMWJNS0Z3cHZEdHNLK3dyakRvZ3htVnNPQmVNT1p3NHJEcjhLbHc3dHFKR1hDaGNLTEo4S3l3NXpEclhBMFNNT3NOUlhEcThLMEljT0l3cnZEcmNPT3dwckNwc08zTGd6RGlISkV3cjVJdzdmRGtrdkNuWE1od3FiQ2tpL0Rrc0tqd3FFWHc0N0NzSGpDbmNPaExTVXR3clpydzVIQ21nSXZQd0lIQ3NLbndxWEN1OEsrd29qRHNzSzlDeTdEdDhPNUJGdkNoUVp2WGNPWWQ4T3FYOE8zTkVSOXc2RW9MM1ppQ01LWHdwdkNyUkFkRDIwY0wxWmh3NkxDdWxWN3dwa1Z3NzlnRThLcXdvSERpOE83dzVqRHI4S1lNRDlEdzU1cWYybEN3NHpEcmNPMGFtb2R3NEhDaXNLdUFrM0NuTU9Kd3FsNEFnWENxM1JtTzhLVndyZkNqTU8wdzRIQ2hNS3FjUkFhYm1QRHJzT0V3Nnhsd3BiRG9DL0RzOEtwd3IzQ2tNT2FQVW5EdE1LY3c0d3VPc09udzY5TkdFcHJQc09ldzd6RGtzS0VmbGJEbE1PQndwRERuMVJ0dzdCdVNTdkNqd1REaUJMRGhzT3VYY09Fd3J3YndvWkJ3by9Ec3NLcHdvb2REU0hEcHNLV0RzT0dNUVlWdzYzRHBzTzZUc09vQVhzWEZjT1dHd3BFdzdkeHdwVERuazlvZjhLRmVjT3d3N3hCd3A4dVNqSlJ3cDNDaHNLWXc2SENrOE94Tk1PTmNnckNqVHZDZ2hURHJjT09OWFZXdzdERHJzS2l3N29MY21SdmVXb0xQeXQwdzdUQ3BqUENqQjdEanNLQVFjS3l3cnJEdGNPUXc1a2VLTU9iWkNIQ3JzT1NmZzFrWWh2Q3QzRWFSOEtudzRiQ3A4T25PMlhDbVdiQ3B6dkR1eUhEam5RSWRudkRvU2JEdHNLUlBjSzh3NEFGdzZ6RGo4S2x3bzRhRDBQQ3ZNS01ieUREbzEzRGhWckRoOE9Cd3EzQ3EyTERqaVVtTVZmRHJoVERqY09vWThPdlFrVENwY09kd3BRbkJjSzd3ck56UldSQ3dxQmVETU9yVG5YRHJjT0xSOEtxd3JiQ2trWEN1Y09oWFh6Q254RlZ3ckxDaEdaTHc1cGFCQWcvdzViQ3NEZzd3cjBkVnNLdFNVNGh3NjRkd296Q3Q4T0R3cW9xZGp4a3c2ZkRtQUo5ZEhUQ2l4N0NqOE9TQ1ZQRG8wQUl3NXZDbkE3RHJjT3VORTNDaEdnZFVIVmFNTU9FdzZaZUZjT1d3cHZEcWxnRWYxM0RvRC9EbG01SHdvTER0R3JEcjNmRHJNT1dIOE9EQ3NLMWZtazNIMmhOU3NPS3c0WENxbGhWd3FkWXc0QUd3N1BDcWNLWFRjS2t3b1hDc1hrMnc0L0N1c093dzRGdXdvWERvY0tnRGd0clk4T3JPVURDak1Lb3c1TERrc0tXUmNLMHdwQVV3b2ZDbVczQ2pDbHhaY085ZjF2Q2d6N0NvY09vdzVBVHdvTERoRmdVd3FjQXdxQklDc08vdzdwVEVjT2dRRzdEaXd2RHBzS3NVY0txdzR0M3dxckN2Vi9DdWNPOHdvckNxOE9Nd3BYRHJjS1F3cHZDbFI1ZXdvdkR1RFFrd3BKV3c2Z0p3NFBDcTBSZHc3TkV3NkFkdzZKRHdxVmx3cWh3SXNPOVlNS2p3NWJDb01PMXdvZkRublREaURNRHc0QVR3N2pEdVRQRHFzT2hHVU5Kdzd6Q2ljS2t3b2NDS0JMQ296RENtaUluU0JIQ2hzSzN3NDNEbjhPNnc2bkRuM1Iwd3JoZndwVERpRE02UVhMRHJ4QU1DY096dzZIQ3Y4T3h3cjh3dzZURGgzOEJhMUlzdzZ3PV1dPjwvZ3Jhdml0RGVzaWduZXI6Z3Jhdml0R3JhcGhpY1NvdXJjZT48L3N2Zz4=" alt style="height:100%;max-height:40px;padding:5px 0 5px 0;box-sizing:border-box">
+ </div>
+ </div>
+ <nav id=navigation-menu-wrapper class="navigation-menu-wrapper hidden sf-hidden">
+ 
+ </nav>
+</header>
+</div>
+ <main>
+ <div class=fixed-soc-med-dock>
+ 
+<nav class=sharebuttons-sf>
+ 
+ 
+ <div><a href="https://www.linkedin.com/shareArticle?mini=true&amp;url=https%3a%2f%2fcode-white.com%2fblog%2f2016-02-java-and-command-line-injections-in-windows%2f&amp;title=Java%20and%20Command%20Line%20Injections%20in%20Windows&amp;summary=This%2bwas%2boriginally%2bposted%2bon%2bblogger%2bhere.%250AEveryone%2bknows%2bthat%2bincorporating%2buser%2bprovided%2bfragments%2binto%2ba%2bcommand%2bline%2bis%2bdangerous%2band%2bmay%2blead%2bto%2bcommand%2binjection.%2bThat%25E2%2580%2599s%2bwhy%2bin%2bJava%2bmany%2b%25E2%2580%25A6" target=_blank><svg style=isolation:isolate viewBox="0 0 500 500" width=500pt height=500pt version=1.1 id=svg1063 xmlns=http://www.w3.org/2000/svg xmlns:svg=http://www.w3.org/2000/svg>
+ <defs id=defs1051>
+ <clippath id=_clipPath_7OiLPaz2aPIdc4yXtQcD6BPVCGlQBcbA>
+ <rect width=500 height=500 id=rect1048></rect>
+ </clippath>
+ </defs>
+ <g clip-path=url(#_clipPath_7OiLPaz2aPIdc4yXtQcD6BPVCGlQBcbA) id=g1061>
+ <g id=g1059>
+ <g id=g1057>
+ <g id=g1055>
+ <path class=will-change_sf d=" M 106.419 61.33 C 81.504 61.33 61 81.834 61 106.749 C 61 131.665 81.504 152.164 106.419 152.164 L 106.429 152.164 C 131.34 152.162 151.834 131.66 151.834 106.749 L 151.834 106.74 C 151.829 81.829 131.333 61.33 106.419 61.33 L 106.419 61.33 Z  M 339.394 180.335 C 311.249 181.227 285.263 196.54 270.922 221.061 L 269.865 221.061 L 269.865 186.619 L 194.734 186.619 L 194.734 438.661 L 272.998 438.661 L 272.998 313.976 C 272.998 281.096 279.232 249.255 319.995 249.255 C 360.178 249.255 360.703 286.876 360.703 316.103 L 360.703 438.67 L 438.968 438.67 L 439 300.405 C 439 232.527 424.374 180.349 345.051 180.349 C 343.159 180.278 341.271 180.275 339.394 180.334 L 339.394 180.335 Z  M 67.216 186.619 L 67.216 438.67 L 145.558 438.67 L 145.558 186.619 L 67.216 186.619 Z " fill-rule=evenodd fill=rgb(255,255,255) id=path1053></path>
+ </g>
+ </g>
+ </g>
+ </g>
+</svg>
+</a></div>
+ 
+ <div><a href="https://www.xing.com/social_plugins/share/new?sc_p=xing-share&amp;h=1&amp;url=https%3a%2f%2fcode-white.com%2fblog%2f2016-02-java-and-command-line-injections-in-windows%2f" target=_blank><svg style=isolation:isolate viewBox="0 0 500 500" width=500pt height=500pt version=1.1 id=svg901 xmlns=http://www.w3.org/2000/svg>
+ <defs id=defs885>
+ <clippath id=_clipPath_0lsag36D1AxeJJykDnvjLacHlXXHtm42>
+ <rect width=500 height=500 id=rect882></rect>
+ </clippath>
+ </defs>
+ <g clip-path=url(#_clipPath_0lsag36D1AxeJJykDnvjLacHlXXHtm42) id=g899>
+ <g id=g897>
+ <g id=g895>
+ <g id=g893>
+ <g id=g891>
+ <path class=will-change_sf d=" M 101.966 121.323 C 98.272 121.323 95.163 122.62 93.601 125.157 C 91.983 127.779 92.235 131.152 93.947 134.568 L 135.427 206.373 C 135.504 206.508 135.504 206.587 135.427 206.719 L 70.245 321.747 C 68.544 325.134 68.627 328.537 70.245 331.158 C 71.807 333.68 74.567 335.34 78.262 335.34 L 139.61 335.34 C 148.784 335.34 153.204 329.15 156.341 323.489 C 156.341 323.489 220.087 210.749 222.569 206.371 C 222.328 205.967 180.392 132.823 180.392 132.823 C 177.339 127.386 172.724 121.32 163.312 121.32 L 101.966 121.323 Z " fill=rgb(255,255,255) id=path887></path>
+ <path class=will-change_sf d=" M 359.694 37.318 C 350.533 37.318 346.56 43.09 343.269 49.002 C 343.269 49.002 211.106 283.378 206.756 291.075 C 206.97 291.494 293.926 450.998 293.926 450.998 C 296.965 456.435 301.664 462.682 311.061 462.682 L 372.34 462.682 C 376.034 462.682 378.92 461.288 380.482 458.764 C 382.114 456.142 382.072 452.685 380.347 449.282 L 293.861 291.27 C 293.784 291.135 293.784 290.993 293.861 290.866 L 429.691 50.703 C 431.392 47.315 431.434 43.858 429.825 41.236 C 428.263 38.714 425.364 37.318 421.669 37.318 L 359.694 37.318 Z " fill=rgb(255,255,255) id=path889></path>
+ </g>
+ </g>
+ </g>
+ </g>
+ </g>
+</svg>
+</a></div>
+ <div><a href="https://twitter.com/share?text=Java%20and%20Command%20Line%20Injections%20in%20Windows&amp;url=https%3a%2f%2fcode-white.com%2fblog%2f2016-02-java-and-command-line-injections-in-windows%2f" target=_blank><svg width=1200 height=1227 viewBox="0 0 1200 1227" fill=none xmlns=http://www.w3.org/2000/svg>
+ <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z" fill=white></path>
+</svg>
+</a></div>
+ 
+</nav>
+ </div>
+ <div class=single_blog-post-header>
+ <div class=single_blog-post-header-button>
+ <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwoKICAgdmlld0JveD0iMCAwIDI2LjQ1ODMzMyAyNi40NTgzMzQiCiAgIHZlcnNpb249IjEuMSIKICAgaWQ9InN2ZzUiCiAgIGlua3NjYXBlOnZlcnNpb249IjEuMS4xICgzYmY1YWUwLCAyMDIxLTA5LTIwKSIKICAgc29kaXBvZGk6ZG9jbmFtZT0iYXJyb3dfaGVhZF9wbGFpbl93aGl0ZS5zdmciCiAgIHhtbG5zOmlua3NjYXBlPSJodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy9uYW1lc3BhY2VzL2lua3NjYXBlIgogICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiCiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHNvZGlwb2RpOm5hbWVkdmlldwogICAgIGlkPSJuYW1lZHZpZXc3IgogICAgIHBhZ2Vjb2xvcj0iI2ZmZmZmZiIKICAgICBib3JkZXJjb2xvcj0iIzY2NjY2NiIKICAgICBib3JkZXJvcGFjaXR5PSIxLjAiCiAgICAgaW5rc2NhcGU6cGFnZXNoYWRvdz0iMiIKICAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMC4wIgogICAgIGlua3NjYXBlOnBhZ2VjaGVja2VyYm9hcmQ9InRydWUiCiAgICAgaW5rc2NhcGU6ZG9jdW1lbnQtdW5pdHM9Im1tIgogICAgIHNob3dncmlkPSJmYWxzZSIKICAgICB1bml0cz0icHgiCiAgICAgd2lkdGg9IjEwMHB4IgogICAgIGlua3NjYXBlOnNuYXAtYmJveD0idHJ1ZSIKICAgICBpbmtzY2FwZTpiYm94LXBhdGhzPSJ0cnVlIgogICAgIGlua3NjYXBlOmJib3gtbm9kZXM9InRydWUiCiAgICAgaW5rc2NhcGU6c25hcC1iYm94LWVkZ2UtbWlkcG9pbnRzPSJ0cnVlIgogICAgIGlua3NjYXBlOm9iamVjdC1wYXRocz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLWludGVyc2VjdGlvbi1wYXRocz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLXNtb290aC1ub2Rlcz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLW1pZHBvaW50cz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLWJib3gtbWlkcG9pbnRzPSJ0cnVlIgogICAgIHNob3dndWlkZXM9InRydWUiCiAgICAgaW5rc2NhcGU6Z3VpZGUtYmJveD0idHJ1ZSIKICAgICBpbmtzY2FwZTp6b29tPSI2LjIyMTcxNzIiCiAgICAgaW5rc2NhcGU6Y3g9Ijc4Ljk5NzQ4NCIKICAgICBpbmtzY2FwZTpjeT0iNjcuNTg1ODQzIgogICAgIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMzg0MCIKICAgICBpbmtzY2FwZTp3aW5kb3ctaGVpZ2h0PSIxNTU4IgogICAgIGlua3NjYXBlOndpbmRvdy14PSIwIgogICAgIGlua3NjYXBlOndpbmRvdy15PSI0MiIKICAgICBpbmtzY2FwZTp3aW5kb3ctbWF4aW1pemVkPSIxIgogICAgIGlua3NjYXBlOmN1cnJlbnQtbGF5ZXI9ImxheWVyMSI+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIxNi40NzAxMzYsMjIuMTIwODE0IgogICAgICAgb3JpZW50YXRpb249IjEsMCIKICAgICAgIGlkPSJndWlkZTEzNzgiIC8+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIwLDI2LjQ1ODMzMyIKICAgICAgIG9yaWVudGF0aW9uPSIwLDEwMCIKICAgICAgIGlkPSJndWlkZTE3MDciIC8+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIyNi40NTgzMzMsMjYuNDU4MzMzIgogICAgICAgb3JpZW50YXRpb249IjEwMCwwIgogICAgICAgaWQ9Imd1aWRlMTcwOSIgLz4KICAgIDxzb2RpcG9kaTpndWlkZQogICAgICAgcG9zaXRpb249IjI2LjQ1ODMzMywwIgogICAgICAgb3JpZW50YXRpb249IjAsLTEwMCIKICAgICAgIGlkPSJndWlkZTE3MTEiIC8+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIwLDAiCiAgICAgICBvcmllbnRhdGlvbj0iLTEwMCwwIgogICAgICAgaWQ9Imd1aWRlMTcxMyIgLz4KICA8L3NvZGlwb2RpOm5hbWVkdmlldz4KICA8ZGVmcwogICAgIGlkPSJkZWZzMiIgLz4KICA8ZwogICAgIGlua3NjYXBlOmxhYmVsPSJMYXllciAxIgogICAgIGlua3NjYXBlOmdyb3VwbW9kZT0ibGF5ZXIiCiAgICAgaWQ9ImxheWVyMSI+CiAgICA8cGF0aAogICAgICAgaWQ9InJlY3Q4NzAiCiAgICAgICBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDoyLjY0NTgzO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGQ9Ik0gMTYuNjU5OTU4LDE5LjA2NzcyMyA4LjE3NTU2OSwxMy4yMjkxNjcgMTYuNjU5OTU4LDcuMzkwNjEwNCIKICAgICAgIHNvZGlwb2RpOm5vZGV0eXBlcz0iY2NjIiAvPgogIDwvZz4KPC9zdmc+Cg==" alt>
+ </div>
+ </div>
+ <div class=single_blog-post-footer>
+ <div class="single_blog-post-footer-button arrow_up arrow_up-width-manager-class" style=visibility:hidden>
+ <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwoKICAgdmlld0JveD0iMCAwIDI2LjQ1ODMzMyAyNi40NTgzMzQiCiAgIHZlcnNpb249IjEuMSIKICAgaWQ9InN2ZzUiCiAgIGlua3NjYXBlOnZlcnNpb249IjEuMS4xICgzYmY1YWUwLCAyMDIxLTA5LTIwKSIKICAgc29kaXBvZGk6ZG9jbmFtZT0iYXJyb3dfaGVhZF9wbGFpbl93aGl0ZS5zdmciCiAgIHhtbG5zOmlua3NjYXBlPSJodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy9uYW1lc3BhY2VzL2lua3NjYXBlIgogICB4bWxuczpzb2RpcG9kaT0iaHR0cDovL3NvZGlwb2RpLnNvdXJjZWZvcmdlLm5ldC9EVEQvc29kaXBvZGktMC5kdGQiCiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHNvZGlwb2RpOm5hbWVkdmlldwogICAgIGlkPSJuYW1lZHZpZXc3IgogICAgIHBhZ2Vjb2xvcj0iI2ZmZmZmZiIKICAgICBib3JkZXJjb2xvcj0iIzY2NjY2NiIKICAgICBib3JkZXJvcGFjaXR5PSIxLjAiCiAgICAgaW5rc2NhcGU6cGFnZXNoYWRvdz0iMiIKICAgICBpbmtzY2FwZTpwYWdlb3BhY2l0eT0iMC4wIgogICAgIGlua3NjYXBlOnBhZ2VjaGVja2VyYm9hcmQ9InRydWUiCiAgICAgaW5rc2NhcGU6ZG9jdW1lbnQtdW5pdHM9Im1tIgogICAgIHNob3dncmlkPSJmYWxzZSIKICAgICB1bml0cz0icHgiCiAgICAgd2lkdGg9IjEwMHB4IgogICAgIGlua3NjYXBlOnNuYXAtYmJveD0idHJ1ZSIKICAgICBpbmtzY2FwZTpiYm94LXBhdGhzPSJ0cnVlIgogICAgIGlua3NjYXBlOmJib3gtbm9kZXM9InRydWUiCiAgICAgaW5rc2NhcGU6c25hcC1iYm94LWVkZ2UtbWlkcG9pbnRzPSJ0cnVlIgogICAgIGlua3NjYXBlOm9iamVjdC1wYXRocz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLWludGVyc2VjdGlvbi1wYXRocz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLXNtb290aC1ub2Rlcz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLW1pZHBvaW50cz0idHJ1ZSIKICAgICBpbmtzY2FwZTpzbmFwLWJib3gtbWlkcG9pbnRzPSJ0cnVlIgogICAgIHNob3dndWlkZXM9InRydWUiCiAgICAgaW5rc2NhcGU6Z3VpZGUtYmJveD0idHJ1ZSIKICAgICBpbmtzY2FwZTp6b29tPSI2LjIyMTcxNzIiCiAgICAgaW5rc2NhcGU6Y3g9Ijc4Ljk5NzQ4NCIKICAgICBpbmtzY2FwZTpjeT0iNjcuNTg1ODQzIgogICAgIGlua3NjYXBlOndpbmRvdy13aWR0aD0iMzg0MCIKICAgICBpbmtzY2FwZTp3aW5kb3ctaGVpZ2h0PSIxNTU4IgogICAgIGlua3NjYXBlOndpbmRvdy14PSIwIgogICAgIGlua3NjYXBlOndpbmRvdy15PSI0MiIKICAgICBpbmtzY2FwZTp3aW5kb3ctbWF4aW1pemVkPSIxIgogICAgIGlua3NjYXBlOmN1cnJlbnQtbGF5ZXI9ImxheWVyMSI+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIxNi40NzAxMzYsMjIuMTIwODE0IgogICAgICAgb3JpZW50YXRpb249IjEsMCIKICAgICAgIGlkPSJndWlkZTEzNzgiIC8+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIwLDI2LjQ1ODMzMyIKICAgICAgIG9yaWVudGF0aW9uPSIwLDEwMCIKICAgICAgIGlkPSJndWlkZTE3MDciIC8+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIyNi40NTgzMzMsMjYuNDU4MzMzIgogICAgICAgb3JpZW50YXRpb249IjEwMCwwIgogICAgICAgaWQ9Imd1aWRlMTcwOSIgLz4KICAgIDxzb2RpcG9kaTpndWlkZQogICAgICAgcG9zaXRpb249IjI2LjQ1ODMzMywwIgogICAgICAgb3JpZW50YXRpb249IjAsLTEwMCIKICAgICAgIGlkPSJndWlkZTE3MTEiIC8+CiAgICA8c29kaXBvZGk6Z3VpZGUKICAgICAgIHBvc2l0aW9uPSIwLDAiCiAgICAgICBvcmllbnRhdGlvbj0iLTEwMCwwIgogICAgICAgaWQ9Imd1aWRlMTcxMyIgLz4KICA8L3NvZGlwb2RpOm5hbWVkdmlldz4KICA8ZGVmcwogICAgIGlkPSJkZWZzMiIgLz4KICA8ZwogICAgIGlua3NjYXBlOmxhYmVsPSJMYXllciAxIgogICAgIGlua3NjYXBlOmdyb3VwbW9kZT0ibGF5ZXIiCiAgICAgaWQ9ImxheWVyMSI+CiAgICA8cGF0aAogICAgICAgaWQ9InJlY3Q4NzAiCiAgICAgICBzdHlsZT0iZmlsbDpub25lO3N0cm9rZTojZmZmZmZmO3N0cm9rZS13aWR0aDoyLjY0NTgzO3N0cm9rZS1saW5lY2FwOnNxdWFyZTtzdHJva2UtbGluZWpvaW46bWl0ZXI7c3Ryb2tlLW1pdGVybGltaXQ6NDtzdHJva2UtZGFzaGFycmF5Om5vbmU7c3Ryb2tlLW9wYWNpdHk6MSIKICAgICAgIGQ9Ik0gMTYuNjU5OTU4LDE5LjA2NzcyMyA4LjE3NTU2OSwxMy4yMjkxNjcgMTYuNjU5OTU4LDcuMzkwNjEwNCIKICAgICAgIHNvZGlwb2RpOm5vZGV0eXBlcz0iY2NjIiAvPgogIDwvZz4KPC9zdmc+Cg==" alt>
+ </div>
+ </div>
+ <div class=single_blog-post-wrapper>
+ <div class="modal image-viewer-wrapper sf-hidden">
+ 
+ 
+ </div>
+ <article class=single_blog-post-content>
+ <div class=article-header>
+ <div> Feb 4, 2016</div>
+ 
+ 
+ <div class=single_blog-post_author-wrapper>
+ <a class=blog-header_author href=https://code-white.com/authors/markus-wulftange>Markus Wulftange</a>
+ <span class=blog-header_author_separator style=display:none>|</span></div>
+ 
+ </div>
+ <div class=single-blog-post-content-wrapper>
+ <h1>Java and Command Line Injections in Windows</h1>
+ <p><em>This was originally posted on blogger <a href=https://codewhitesec.blogspot.com/2016/02/java-and-command-line-injections-in-windows.html>here</a></em>.</p>
+<p>Everyone knows that incorporating user provided fragments into a command line is dangerous and may lead to command injection. That’s why in Java many suggest using <em>ProcessBuilder</em> instead where the program’s arguments are supposed to be passed discretely in separate strings.</p>
+<p>However, in Windows, processes are created with a single command line string. And since there are different and seemingly confusing parsing rules for different runtime environments, proper quoting seems to be likewise complicated.</p>
+<p>This makes Java for Windows still vulnerable to injection of additional arguments and even commands into the command line.</p>
+<h1 id=windows-createprocess-command-lines>Windows’ CreateProcess Command Lines</h1>
+<p>In Windows, the main function for creating processes is the <a href=https://msdn.microsoft.com/ms682425><em>CreateProcess</em> function</a>. And in contrast to C API functions like <a href=http://linux.die.net/man/2/execve><em>execve</em></a>, arguments are not passed separately as an array of strings but in a single command line. On the other side, the entry <a href=https://msdn.microsoft.com/ms633559>point function <em>WinMain</em></a> expects a single command line argument as well.</p>
+<p>This circumstance requires the program to parse the command line itself for extracting the arguments. And although Windows provides a <a href=https://msdn.microsoft.com/bb776391><em>CommandLineToArgvW</em></a> function and supports C and C++ API entry point functions where arguments are already parsed by the runtime and passed in a <em>argc/argv</em> style, the <a href=http://daviddeley.com/autohotkey/parameters/parameters.htm>rules for quoting command line arguments with all their quirks can be quite confusing</a>. And there is no definitive guide on how to quote properly, let alone something like a <em>ArgvToCommandLineW</em> function that does it for you. That’s why many do it wrong, as <a href=http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx>“Everyone quotes command line arguments the wrong way” by Daniel Colascione</a> observes.</p>
+<p>You should definitely read the latter two linked pages first to understand the rest of this blog post.</p>
+<p>For testing, we’ll use the following Java class, which utilizes <em>ProcessBuilder</em> as suggested:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#f92672>import</span> java.io.IOException<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.io.InputStream<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>import</span> java.util.Arrays<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>public</span> <span style=color:#66d9ef>class</span> <span style=color:#a6e22e>CommandLine</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>main</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> args<span style=color:#f92672>)</span> <span style=color:#66d9ef>throws</span> IOException <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>		args <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> String<span style=color:#f92672>[]</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>			<span style=color:#e6db74>"C:\\Temp\\PrintArguments.exe"</span><span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>			<span style=color:#e6db74>"arg 1"</span><span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>			<span style=color:#e6db74>"arg 2"</span><span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>			<span style=color:#e6db74>"arg 3"</span>
+</span></span><span style=display:flex><span>		<span style=color:#f92672>};</span>
+</span></span><span style=display:flex><span>		start<span style=color:#f92672>(</span>args<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>	<span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>public</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>void</span> <span style=color:#a6e22e>start</span><span style=color:#f92672>(</span>String<span style=color:#f92672>[]</span> args<span style=color:#f92672>)</span> <span style=color:#66d9ef>throws</span> IOException <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>		InputStream in <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> ProcessBuilder<span style=color:#f92672>(</span>Arrays<span style=color:#f92672>.</span><span style=color:#a6e22e>asList</span><span style=color:#f92672>(</span>args<span style=color:#f92672>)).</span><span style=color:#a6e22e>start</span><span style=color:#f92672>().</span><span style=color:#a6e22e>getInputStream</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>byte</span><span style=color:#f92672>[]</span> buffer <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> <span style=color:#66d9ef>byte</span><span style=color:#f92672>[</span><span style=color:#ae81ff>1024</span><span style=color:#f92672>];</span>
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>int</span> len<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>		<span style=color:#66d9ef>while</span> <span style=color:#f92672>((</span>len <span style=color:#f92672>=</span> in<span style=color:#f92672>.</span><span style=color:#a6e22e>read</span><span style=color:#f92672>(</span>buffer<span style=color:#f92672>))</span> <span style=color:#f92672>!=</span> <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>		    System<span style=color:#f92672>.</span><span style=color:#a6e22e>out</span><span style=color:#f92672>.</span><span style=color:#a6e22e>write</span><span style=color:#f92672>(</span>buffer<span style=color:#f92672>,</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>,</span> len<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>		<span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>	<span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>The resulting CreateProcess command line can be observed with the <a href=https://technet.microsoft.com/sysinternals/processmonitor.aspx>Windows Sysinternals’ Process Monitor</a>. And for how the command line gets parsed, you can use the following program, which prints the results of both the <a href=https://msdn.microsoft.com/a1y7w461>parsing of C command-line arguments</a> (via the <em>argv</em> function parameter) and of the <a href=https://msdn.microsoft.com/17w5ykft>parsing of C++ command-line arguments</a> (via <a href=https://msdn.microsoft.com/bb776391>CommandLineToArgvW function</a>).</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c data-lang=c><span style=display:flex><span><span style=color:#75715e>#include</span> <span style=color:#75715e>&lt;Windows.h&gt;</span><span style=color:#75715e>
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>int</span> <span style=color:#a6e22e>main</span>(<span style=color:#66d9ef>int</span> argc, <span style=color:#66d9ef>char</span> <span style=color:#f92672>*</span>argv[], <span style=color:#66d9ef>char</span> <span style=color:#f92672>**</span>envp)
+</span></span><span style=display:flex><span>{
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>int</span> nArgs;
+</span></span><span style=display:flex><span>	LPWSTR <span style=color:#f92672>*</span> szArgs;
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>printf</span>(<span style=color:#e6db74>"argv arguments:</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>"</span>);
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> (<span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; i <span style=color:#f92672>&lt;</span> argc; <span style=color:#f92672>++</span>i) <span style=color:#a6e22e>printf</span>(<span style=color:#e6db74>"%u: '%s'</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>"</span>, i, argv[i]);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>printf</span>(<span style=color:#e6db74>"CommandLineToArgvW arguments:</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>"</span>);
+</span></span><span style=display:flex><span>	szArgs <span style=color:#f92672>=</span> <span style=color:#a6e22e>CommandLineToArgvW</span>(<span style=color:#a6e22e>GetCommandLineW</span>(), <span style=color:#f92672>&amp;</span>nArgs);
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>if</span> (szArgs <span style=color:#f92672>==</span> NULL) <span style=color:#66d9ef>return</span> <span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>;
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>for</span> (<span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span>; i <span style=color:#f92672>&lt;</span> nArgs; <span style=color:#f92672>++</span>i) <span style=color:#a6e22e>wprintf</span>(<span style=color:#e6db74>L</span><span style=color:#e6db74>"%u: '%ws'</span><span style=color:#ae81ff>\n</span><span style=color:#e6db74>"</span>, i, szArgs[i]);
+</span></span><span style=display:flex><span>	<span style=color:#a6e22e>LocalFree</span>(szArgs);
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#66d9ef>return</span> <span style=color:#ae81ff>0</span>;
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>This already produces different and frankly surprising results in some cases:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-txt data-lang=txt><span style=display:flex><span>Arguments in Java:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '"""""'
+</span></span><span style=display:flex><span>CreateProcess command line:
+</span></span><span style=display:flex><span>  "C:\Temp\PrintArguments.exe" """""
+</span></span><span style=display:flex><span>argv arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '""'
+</span></span><span style=display:flex><span>CommandLineToArgvW arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '"'
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Arguments in Java:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '" "" "'
+</span></span><span style=display:flex><span>CreateProcess command line:
+</span></span><span style=display:flex><span>  "C:\Temp\PrintArguments.exe" " "" "
+</span></span><span style=display:flex><span>argv arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: ' " '
+</span></span><span style=display:flex><span>CommandLineToArgvW arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: ' "'
+</span></span><span style=display:flex><span>  2: ''
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Arguments in Java:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '"" '
+</span></span><span style=display:flex><span>CreateProcess command line:
+</span></span><span style=display:flex><span>  C:\Temp\PrintArguments.exe """ "
+</span></span><span style=display:flex><span>argv arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '" '
+</span></span><span style=display:flex><span>CommandLineToArgvW arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '"'
+</span></span><span style=display:flex><span>  2: ''
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>Arguments in Java:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '""" '
+</span></span><span style=display:flex><span>CreateProcess command line:
+</span></span><span style=display:flex><span>  C:\Temp\PrintArguments.exe """" "
+</span></span><span style=display:flex><span>argv arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '"'
+</span></span><span style=display:flex><span>  2: ''
+</span></span><span style=display:flex><span>CommandLineToArgvW arguments:
+</span></span><span style=display:flex><span>  0: 'C:\Temp\PrintArguments.exe'
+</span></span><span style=display:flex><span>  1: '" '
+</span></span></code></pre></div><p>The last two are remarkable as one additional quotation mark swaps the results of <em>argv</em> and <em>CommandLineToArgvW</em>.</p>
+<h1 id=javas-command-line-generation-in-windows>Java’s Command Line Generation in Windows</h1>
+<p>With the knowledge of how <em>CreateProcess</em> expects the command line arguments to be quoted, let’s see how Java builds the command line and quotes the arguments for Windows.</p>
+<p>If a process is started using <em>ProcessBuilder</em>, the arguments are passed to the static method <em>start</em> of <em>ProcessImpl</em>, which is a platform-dependent class. In the <a href=http://hg.openjdk.java.net/jdk8/jdk8/jdk/file/tip/src/windows/classes/java/lang/ProcessImpl.java>Windows implementation of <em>ProcessImpl</em></a>, the <em>start</em> method calls the private constructor of <em>ProcessImpl</em>, which creates the command line for the <em>CreateProcess</em> call.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>private</span> <span style=color:#a6e22e>ProcessImpl</span><span style=color:#f92672>(</span>String cmd<span style=color:#f92672>[],</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>final</span> String envblock<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>final</span> String path<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>long</span><span style=color:#f92672>[]</span> stdHandles<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>final</span> <span style=color:#66d9ef>boolean</span> redirectErrorStream<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>throws</span> IOException
+</span></span><span style=display:flex><span><span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    String cmdstr<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    SecurityManager security <span style=color:#f92672>=</span> System<span style=color:#f92672>.</span><span style=color:#a6e22e>getSecurityManager</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>boolean</span> allowAmbiguousCommands <span style=color:#f92672>=</span> <span style=color:#66d9ef>false</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>security <span style=color:#f92672>==</span> <span style=color:#66d9ef>null</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        allowAmbiguousCommands <span style=color:#f92672>=</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>        String value <span style=color:#f92672>=</span> System<span style=color:#f92672>.</span><span style=color:#a6e22e>getProperty</span><span style=color:#f92672>(</span><span style=color:#e6db74>"jdk.lang.Process.allowAmbiguousCommands"</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>value <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>            allowAmbiguousCommands <span style=color:#f92672>=</span> <span style=color:#f92672>!</span><span style=color:#e6db74>"false"</span><span style=color:#f92672>.</span><span style=color:#a6e22e>equalsIgnoreCase</span><span style=color:#f92672>(</span>value<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>allowAmbiguousCommands<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e>/* 331-344 skipped; legacy mode */</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span> <span style=color:#66d9ef>else</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e>/* 346-383 skipped; strict mode */</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    handle <span style=color:#f92672>=</span> create<span style=color:#f92672>(</span>cmdstr<span style=color:#f92672>,</span> envblock<span style=color:#f92672>,</span> path<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>                    stdHandles<span style=color:#f92672>,</span> redirectErrorStream<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>/* 389-418 skipped */</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>In the private constructor of <em>ProcessImpl</em>, there are two operational modes: the legacy mode and the strict mode. These are the result of <a href=https://blogs.oracle.com/thejavatutorials/entry/changes_to_runtime_exec_problems>issues caused by changes to Runtime.exec</a>. The legacy mode is only performed if there is no <em>SecurityManager</em> present and the property <em>jdk.lang.Process.allowAmbiguousCommands</em> is not set to <em>false</em>.</p>
+<h3 id=the-legacy-mode>The Legacy Mode</h3>
+<p>In the legacy mode, the first argument (i.e., the program to execute) is quoted if required and then the command line is created using <em>createCommandLine</em>.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#75715e>// Legacy mode.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// Normalize path if possible.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>String executablePath <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> File<span style=color:#f92672>(</span>cmd<span style=color:#f92672>[</span><span style=color:#ae81ff>0</span><span style=color:#f92672>]).</span><span style=color:#a6e22e>getPath</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// No worry about internal, unpaired ["], and redirection/piping.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span><span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>needsEscaping<span style=color:#f92672>(</span>VERIFICATION_LEGACY<span style=color:#f92672>,</span> executablePath<span style=color:#f92672>)</span> <span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>    executablePath <span style=color:#f92672>=</span> quoteString<span style=color:#f92672>(</span>executablePath<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>cmdstr <span style=color:#f92672>=</span> createCommandLine<span style=color:#f92672>(</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>//legacy mode doesn't worry about extended verification
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    VERIFICATION_LEGACY<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>    executablePath<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>    cmd<span style=color:#f92672>);</span>
+</span></span></code></pre></div><p>The <em>needsEscaping</em> method checks whether the value is already quoted using <em>isQuoted</em> or wraps it in double quotes if it contains certain characters.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>private</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>boolean</span> <span style=color:#a6e22e>needsEscaping</span><span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> verificationType<span style=color:#f92672>,</span> String arg<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// Switch off MS heuristic for internal ["].
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>// Please, use the explicit [cmd.exe] call
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>// if you need the internal ["].
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>//    Example: "cmd.exe", "/C", "Extended_MS_Syntax"
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// For [.exe] or [.com] file the unpaired/internal ["]
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>// in the argument is not a problem.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#66d9ef>boolean</span> argIsQuoted <span style=color:#f92672>=</span> isQuoted<span style=color:#f92672>(</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>(</span>verificationType <span style=color:#f92672>==</span> VERIFICATION_CMD_BAT<span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span>        arg<span style=color:#f92672>,</span> <span style=color:#e6db74>"Argument has embedded quote, use the explicit CMD.EXE call."</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(!</span>argIsQuoted<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>char</span> testEscape<span style=color:#f92672>[]</span> <span style=color:#f92672>=</span> ESCAPE_VERIFICATION<span style=color:#f92672>[</span>verificationType<span style=color:#f92672>];</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>;</span> i <span style=color:#f92672>&lt;</span> testEscape<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>arg<span style=color:#f92672>.</span><span style=color:#a6e22e>indexOf</span><span style=color:#f92672>(</span>testEscape<span style=color:#f92672>[</span>i<span style=color:#f92672>])</span> <span style=color:#f92672>&gt;=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>private</span> <span style=color:#66d9ef>static</span> <span style=color:#66d9ef>boolean</span> <span style=color:#a6e22e>isQuoted</span><span style=color:#f92672>(</span><span style=color:#66d9ef>boolean</span> noQuotesInside<span style=color:#f92672>,</span> String arg<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>        String errorMessage<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>int</span> lastPos <span style=color:#f92672>=</span> arg<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>()</span> <span style=color:#f92672>-</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>lastPos <span style=color:#f92672>&gt;=</span><span style=color:#ae81ff>1</span> <span style=color:#f92672>&amp;&amp;</span> arg<span style=color:#f92672>.</span><span style=color:#a6e22e>charAt</span><span style=color:#f92672>(</span><span style=color:#ae81ff>0</span><span style=color:#f92672>)</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>'"'</span> <span style=color:#f92672>&amp;&amp;</span> arg<span style=color:#f92672>.</span><span style=color:#a6e22e>charAt</span><span style=color:#f92672>(</span>lastPos<span style=color:#f92672>)</span> <span style=color:#f92672>==</span> <span style=color:#e6db74>'"'</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e>// The argument has already been quoted.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>noQuotesInside<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>arg<span style=color:#f92672>.</span><span style=color:#a6e22e>indexOf</span><span style=color:#f92672>(</span><span style=color:#e6db74>'"'</span><span style=color:#f92672>,</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>)</span> <span style=color:#f92672>!=</span> lastPos<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                <span style=color:#75715e>// There is ["] inside.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>                <span style=color:#66d9ef>throw</span> <span style=color:#66d9ef>new</span> IllegalArgumentException<span style=color:#f92672>(</span>errorMessage<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>true</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>noQuotesInside<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>arg<span style=color:#f92672>.</span><span style=color:#a6e22e>indexOf</span><span style=color:#f92672>(</span><span style=color:#e6db74>'"'</span><span style=color:#f92672>)</span> <span style=color:#f92672>&gt;=</span> <span style=color:#ae81ff>0</span><span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// There is ["] inside.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#66d9ef>throw</span> <span style=color:#66d9ef>new</span> IllegalArgumentException<span style=color:#f92672>(</span>errorMessage<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>false</span><span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>The verification type VERIFICATION_LEGACY passed to <em>needsEscaping</em> makes <em>noQuotesInside</em> in <em>isQuoted</em> being <em>false</em>, which would allow quotation marks within the path. It also makes <em>needsEscaping</em> test for space and tabulator characters only.</p>
+<p>But let’s take a look at the createCommandLine method, which creates the command line:</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>private</span> <span style=color:#66d9ef>static</span> String <span style=color:#a6e22e>createCommandLine</span><span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> verificationType<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>                                 <span style=color:#66d9ef>final</span> String executablePath<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>                                 <span style=color:#66d9ef>final</span> String cmd<span style=color:#f92672>[])</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    StringBuilder cmdbuf <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> StringBuilder<span style=color:#f92672>(</span><span style=color:#ae81ff>80</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    cmdbuf<span style=color:#f92672>.</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span>executablePath<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span><span style=color:#66d9ef>int</span> i <span style=color:#f92672>=</span> <span style=color:#ae81ff>1</span><span style=color:#f92672>;</span> i <span style=color:#f92672>&lt;</span> cmd<span style=color:#f92672>.</span><span style=color:#a6e22e>length</span><span style=color:#f92672>;</span> <span style=color:#f92672>++</span>i<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>        cmdbuf<span style=color:#f92672>.</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span><span style=color:#e6db74>' '</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        String s <span style=color:#f92672>=</span> cmd<span style=color:#f92672>[</span>i<span style=color:#f92672>];</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>needsEscaping<span style=color:#f92672>(</span>verificationType<span style=color:#f92672>,</span> s<span style=color:#f92672>))</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            cmdbuf<span style=color:#f92672>.</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span><span style=color:#e6db74>'"'</span><span style=color:#f92672>).</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span>s<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// The code protects the [java.exe] and console command line
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// parser, that interprets the [\"] combination as an escape
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// sequence for the ["] char.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>//     http://msdn.microsoft.com/en-us/library/17w5ykft.aspx
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>//
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// If the argument is an FS path, doubling of the tail [\]
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// char is not a problem for non-console applications.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>//
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// The [\"] sequence is not an escape sequence for the [cmd.exe]
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// command line parser. The case of the [""] tail escape
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// sequence could not be realized due to the argument validation
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#75715e>// procedure.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>            <span style=color:#66d9ef>if</span> <span style=color:#f92672>((</span>verificationType <span style=color:#f92672>!=</span> VERIFICATION_CMD_BAT<span style=color:#f92672>)</span> <span style=color:#f92672>&amp;&amp;</span> s<span style=color:#f92672>.</span><span style=color:#a6e22e>endsWith</span><span style=color:#f92672>(</span><span style=color:#e6db74>"\\"</span><span style=color:#f92672>))</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>                cmdbuf<span style=color:#f92672>.</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span><span style=color:#e6db74>'\\'</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>            cmdbuf<span style=color:#f92672>.</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span><span style=color:#e6db74>'"'</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span> <span style=color:#66d9ef>else</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>            cmdbuf<span style=color:#f92672>.</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span>s<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>        <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> cmdbuf<span style=color:#f92672>.</span><span style=color:#a6e22e>toString</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>Again, with the verification type <em>VERIFICATION_LEGACY</em> the <em>needsEscaping</em> method only returns <em>true</em> if it is already wrapped in quotes (regardless of any quotes within the string) or if it is not wrapped in quotes and contains a space or tabulator character (again, regardless of any quotes within the string). If it needs quoting, it is simply wrapped in quotes and a possible trailing backslash is doubled.</p>
+<p>Ok, so far, so good. Now let’s recall Daniel Colascione’s conclusion:</p>
+<blockquote>
+<p><strong>Do not:</strong></p>
+<ol>
+<li>Simply add quotes around command line argument arguments without any further processing.</li>
+<li>[…]</li>
+</ol>
+</blockquote>
+<p>Yes, exactly. This can be exploited to inject additional arguments:</p>
+<ul>
+<li>
+<p>A value that is <em>considered</em> to be <em>quoted</em>:</p>
+<ul>
+<li>passed argument value: <code>"arg 1" "arg 2" "arg 3"</code></li>
+<li>quoted argument value: no quoting needed as it’s “already quoted”</li>
+<li>parsed argument values: [’<code>arg 1</code>’, ‘<code>arg 2</code>’, ‘<code>arg 3</code>’]</li>
+</ul>
+</li>
+<li>
+<p>A value that is considered to be not quoted but requires quotes:</p>
+<ul>
+<li>passed argument value: <code>"arg" 1" "arg 2" "arg 3</code></li>
+<li>quoted argument value: <code>""arg" 1" "arg 2" "arg 3"</code></li>
+<li>parsed argument values: [’<code>arg 1</code>’, ‘<code>arg 2</code>’, ‘<code>arg 3</code>’]</li>
+</ul>
+</li>
+</ul>
+<h3 id=the-strict-mode>The Strict Mode</h3>
+<p>In the strict mode, things are a little different.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>String executablePath<span style=color:#f92672>;</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>try</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    executablePath <span style=color:#f92672>=</span> getExecutablePath<span style=color:#f92672>(</span>cmd<span style=color:#f92672>[</span><span style=color:#ae81ff>0</span><span style=color:#f92672>]);</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span> <span style=color:#66d9ef>catch</span> <span style=color:#f92672>(</span>IllegalArgumentException e<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// Workaround for the calls like
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>// Runtime.getRuntime().exec("\"C:\\Program Files\\foo\" bar")
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// No chance to avoid CMD/BAT injection, except to do the work
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>// right from the beginning. Otherwise we have too many corner
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>// cases from
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>//    Runtime.getRuntime().exec(String[] cmd [, ...])
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#75715e>// calls with internal ["] and escape sequences.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// Restore original command line.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    StringBuilder join <span style=color:#f92672>=</span> <span style=color:#66d9ef>new</span> StringBuilder<span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// terminal space in command line is ok
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#66d9ef>for</span> <span style=color:#f92672>(</span>String s <span style=color:#f92672>:</span> cmd<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>        join<span style=color:#f92672>.</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span>s<span style=color:#f92672>).</span><span style=color:#a6e22e>append</span><span style=color:#f92672>(</span><span style=color:#e6db74>' '</span><span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// Parse the command line again.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    cmd <span style=color:#f92672>=</span> getTokensFromCommand<span style=color:#f92672>(</span>join<span style=color:#f92672>.</span><span style=color:#a6e22e>toString</span><span style=color:#f92672>());</span>
+</span></span><span style=display:flex><span>    executablePath <span style=color:#f92672>=</span> getExecutablePath<span style=color:#f92672>(</span>cmd<span style=color:#f92672>[</span><span style=color:#ae81ff>0</span><span style=color:#f92672>]);</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// Check new executable name once more
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>    <span style=color:#66d9ef>if</span> <span style=color:#f92672>(</span>security <span style=color:#f92672>!=</span> <span style=color:#66d9ef>null</span><span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>        security<span style=color:#f92672>.</span><span style=color:#a6e22e>checkExec</span><span style=color:#f92672>(</span>executablePath<span style=color:#f92672>);</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e>// Quotation protects from interpretation of the [path] argument as
+</span></span></span><span style=display:flex><span><span style=color:#75715e>// start of longer path with spaces. Quotation has no influence to
+</span></span></span><span style=display:flex><span><span style=color:#75715e>// [.exe] extension heuristic.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>cmdstr <span style=color:#f92672>=</span> createCommandLine<span style=color:#f92672>(</span>
+</span></span><span style=display:flex><span>        <span style=color:#75715e>// We need the extended verification procedure for CMD files.
+</span></span></span><span style=display:flex><span><span style=color:#75715e></span>        isShellFile<span style=color:#f92672>(</span>executablePath<span style=color:#f92672>)</span>
+</span></span><span style=display:flex><span>            <span style=color:#f92672>?</span> VERIFICATION_CMD_BAT
+</span></span><span style=display:flex><span>            <span style=color:#f92672>:</span> VERIFICATION_WIN32<span style=color:#f92672>,</span>
+</span></span><span style=display:flex><span>        quoteString<span style=color:#f92672>(</span>executablePath<span style=color:#f92672>),</span>
+</span></span><span style=display:flex><span>        cmd<span style=color:#f92672>);</span>
+</span></span></code></pre></div><p>If the path contains a quote, <em>getExecutablePath</em> throws an exception and the <em>catch</em> block is executed where <em>getTokensFromCommand</em> tries to extract the path.</p>
+<p>However, the rather interesting part is that <em>createCommandLine</em> is called with a different verification type based on whether <em>isShellFile</em> denotes it as a shell file.</p>
+<div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span><span style=color:#66d9ef>private</span> <span style=color:#66d9ef>boolean</span> <span style=color:#a6e22e>isShellFile</span><span style=color:#f92672>(</span>String executablePath<span style=color:#f92672>)</span> <span style=color:#f92672>{</span>
+</span></span><span style=display:flex><span>    String upPath <span style=color:#f92672>=</span> executablePath<span style=color:#f92672>.</span><span style=color:#a6e22e>toUpperCase</span><span style=color:#f92672>();</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#f92672>(</span>upPath<span style=color:#f92672>.</span><span style=color:#a6e22e>endsWith</span><span style=color:#f92672>(</span><span style=color:#e6db74>".CMD"</span><span style=color:#f92672>)</span> <span style=color:#f92672>||</span> upPath<span style=color:#f92672>.</span><span style=color:#a6e22e>endsWith</span><span style=color:#f92672>(</span><span style=color:#e6db74>".BAT"</span><span style=color:#f92672>));</span>
+</span></span><span style=display:flex><span><span style=color:#f92672>}</span>
+</span></span></code></pre></div><p>But I’ll come back to that later.</p>
+<p>With the verification type <em>VERIFICATION_WIN32</em>, <em>noQuotesInside</em> is still <em>false</em> and both injection examples mentioned above work as well.</p>
+<p>However, if <em>needsEscaping</em> is called with the verification type <em>VERIFICATION_CMD_BAT</em>, <em>noQuotesInside</em> becomes <em>true</em>. And without being able to inject a quote we can’t escape the quoted argument.</p>
+<h1 id=_createprocess_-silent-_cmdexe_-promotion><em>CreateProcess’</em> Silent <em>cmd.exe</em> Promotion</h1>
+<p>Remember the <em>isShellFile</em> checked the file name extension for <code>.cmd</code> and <code>.bat</code>? This is due to the fact that <em>CreateProcess</em> executes these files in a <em>cmd.exe</em> shell environment:</p>
+<blockquote>
+<p>[…] the decision tree that <em>CreateProcess</em> goes through to run an image is as follows:</p>
+<ul>
+<li>[…]</li>
+<li>If the file to run has a <code>.bat</code> or <code>.cmd</code> extension, the image to be run becomes <em>Cmd.exe</em>, the Windows command prompt, and <em>CreateProcess</em> restarts at Stage 1. (The name of the batch file is passed as the first parameter to <em>Cmd.exe</em>.)</li>
+<li>[…]</li>
+</ul>
+<p><a href=https://learn.microsoft.com/en-us/sysinternals/learn/windows-internals>Windows Internals, 6th edition (Part 1)</a></p>
+</blockquote>
+<p>That means a ‘<code>file.bat …</code>’ becomes ‘<code>C:\Windows\system32\cmd.exe /c "file.bat …"</code>’ and an additional set of quoting rules would need to be applied to avoid command injection in the command line interpreted by <em>cmd.exe</em>.</p>
+<p>However, since Java does no additional quoting for this implicit <em>cmd.exe</em> call promotion on the passed arguments, injection is even easier: <code>&amp;calc&amp;</code> does not require any quoting and will be interpreted as a separate command by <em>cmd.exe</em>.</p>
+<p>This works in the legacy mode just like in the strict mode if we make <em>isShellFile</em> return <em>false</em>, e.g., by adding whitespace to the end of the path, which tricks the <em>endsWith</em> check but are ignored by <em>CreateProcess</em>.</p>
+<h1 id=conclusion>Conclusion</h1>
+<p>Command line parsing in Windows is not consistent and therefore the implementation of proper quoting of command line argument even less. This may allow the injection of additional arguments.</p>
+<p>Additionally, since <em>CreateProcess</em> implicitly starts <code>.bat</code> and <code>.cmd</code> in a <em>cmd.exe</em> shell environment, even command injection may be possible.</p>
+<p>As a sample, Java for Windows fails to properly quote command line arguments. Even with <em>ProcessBuilder</em> where arguments are passed as a list of strings:</p>
+<ul>
+<li>Argument injection is possible by providing an argument containing further quoted arguments, e.g., ‘<code>"arg 1" "arg 2" "arg 3"</code>’.</li>
+<li>On <em>cmd.exe</em> process command lines, a simple ‘<code>&amp;calc&amp;</code>’ alone suffices.</li>
+</ul>
+<p>Only within the most strictly mode, the <em>VERIFICATION_CMD_BAT</em> verification type, injection is not possible:</p>
+<ul>
+<li>Legacy mode:
+<ul>
+<li><em>VERIFICATION_LEGACY</em>: There is no <em>SecurityManager</em> present and <em>jdk.lang.Process.allowAmbiguousCommands</em> is not explicitly set to <em>false</em> (no default set)
+<ul>
+<li>allows argument injection</li>
+<li>allows command injection in <em>cmd.exe</em> calls (explicit or implicit)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Strict mode:
+<ul>
+<li><em>VERIFICATION_CMD_BAT</em>: Most strictly mode, file ends with <code>.bat</code> or <code>.cmd</code>
+<ul>
+<li>does not allow argument injection</li>
+<li>does not allow command injection in cmd.exe calls</li>
+</ul>
+</li>
+<li><em>VERIFICATION_WIN32</em>: File does not end with <code>.bat</code> or <code>.cmd</code>
+<ul>
+<li>allows argument injection</li>
+<li>allows command injection in cmd.exe calls (explicit or implicit)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>However, Java’s check for switching to the <em>VERIFICATION_CMD_BAT</em> mode can be circumvented by adding whitespace after the <code>.bat</code> or <code>.cmd</code>.</p>
+ </div>
+ </article>
+ </div>
+ </main>
+ </div>
+ </div>
+ 
