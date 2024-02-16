@@ -1,0 +1,159 @@
+<!DOCTYPE html> <html lang=en><!--
+ Page saved with SingleFile 
+ url: https://ss64.com/nt/cmd.html 
+ saved date: Mon Feb 12 2024 20:08:16 GMT+0300 (Москва, стандартное время)
+--><meta charset=utf-8>
+<meta name=viewport content="width=768, initial-scale=1">
+<style>html{font-size:100%}body{background-color:#d9d9de;color:#141414;font-family:"Helvetica Neue","Segoe UI Variable Static Text",Helvetica,Arial,Oxygen-Sans,Roboto,Ubuntu,sans-serif;font-size:1rem;font-weight:400;margin:15px}p,ul,h1,h2{font-weight:400;line-height:1.3rem}p,hr,ul{max-width:1000px}hr{color:#fff;margin-left:0;text-align:left}pre{font-family:"Lucida Console","Andale Mono",Menlo,"Courier New",Courier,monospace;font-size:1rem;color:#000;line-height:1.125rem}h1{clear:both;font-size:1.5rem;line-height:1.563rem;letter-spacing:0.01rem}h2{font-family:Palatino,"Palatino Linotype",Georgia,Serif;font-size:1.5rem;line-height:1.563rem;margin:1.9ex 0 0;letter-spacing:0.01rem}h3{font-size:1.125rem;line-height:1.3rem;font-weight:700;letter-spacing:0.005rem}blockquote{margin-right:0;margin-left:40px}i{color:#07572c}.code{font-family:"Lucida Console","Andale Mono",Menlo,"Courier New",Courier,monospace;font-size:100%}.quote{color:#07572c;font-family:Palatino,"Segoe UI Variable Static Text",Georgia,FreeSerif,Serif;font-style:italic}a:link{color:#00f;text-decoration:none}a:visited{color:#991bc1;text-decoration:none}a:hover{color:#00f;border-bottom:1px solid #00f}a:active{color:#337fe8;text-decoration:none;border-bottom:1px solid #337fe8}#bl{float:left;max-width:500px;width:50%}#br{color:#333;font-family:"Helvetica Neue","Segoe UI Variable Static Text",Helvetica,Arial,Oxygen-Sans,Roboto,Ubuntu,sans-serif;font-size:75%;float:left;margin-bottom:15px;max-width:500px;text-align:right;letter-spacing:0.005rem;width:50%}#tnav{height:45px;width:1000px}#tnav>ul{list-style:none;margin:0;padding:0}#tnav>ul>li{display:block;float:left;height:40px;line-height:40px;margin:0 .3em 0 0;outline:none;text-align:center;width:140px}#tnav a{text-decoration:none;display:block}#tnav a:link{color:#03f;text-decoration:none}#tnav a:visited{color:#03f;text-decoration:none}#tnav a:hover{color:#e7e7e7;text-decoration:none}#tnav a:focus{color:#229231}#tnav a:active{color:#141414;text-decoration:none}#tnav a{border-bottom:none}#tnav li a:active{border-radius:7px;box-shadow:inset 0 1px 0 0 rgba(0,0,0,.18)}.space{line-height:1.3em}@media (pointer:coarse) and (hover:none){.space{line-height:2.1rem}p{line-height:1.5rem;font-size:1.2rem}H1{font-size:2rem}H2{font-size:1.75rem}}.tbtn{background-color:#f8f9fa;border-color:gray;border-radius:8px;border-style:solid;border-width:1px;box-shadow:0 1px 0 0 rgba(255,255,255,0.6) inset;cursor:pointer;font-family:Helvetica,Arial,Oxygen-Sans,Roboto,Ubuntu,sans-serif;font-size:1.1rem;font-weight:400;text-decoration:none;transition:background-color .25s}.tbtn:hover{background-color:#2e91e3;transition:background-color .25s}.tbtn a:focus{border-radius:7px;background-color:#d9d9de;outline:none}.tbtn svg{fill:#03f}.tbtn:hover svg{fill:#fffefe}.tbtn:active svg{fill:#03f}@media (prefers-color-scheme:dark){body{background-color:#bdbdc6}.tbtn a:focus{background-color:#bdbdc6}hr{color:#e8e8e8}a:link,a:hover{color:#0404ff}a:visited{color:#7d129e}}#search{margin-left:50px;width:420px}#qu{border-radius:6px;border-top:1px solid #7c7c7c;border-left:1px solid #acb5be;border-right:1px solid #acb5be;border-bottom:1px solid #ddd;box-shadow:inset #ccc 0px 1px 0px;color:#404050;font:1rem"Helvetica Neue","Segoe UI Variable Static Text",Helvetica,Arial,Oxygen-Sans,Roboto,Ubuntu,sans-serif;height:1.125rem;left:10px;padding:6px 6px 6px 6px;position:relative;display:block;float:left;top:6px;z-index:1;caret-color:#3f60ad}#qu:focus{outline:none;border:1px solid #4d90fe;box-shadow:0px 0px 4px 0px #4d90fe;transition:border 1s linear,box-shadow 1s linear}#btn{display:block;float:left;position:relative;left:20px;top:6px;width:110px;height:32px;border:1px solid gray;border-radius:3px 3px 3px 3px;color:#0922D5;cursor:pointer;font-family:"Helvetica Neue","Segoe UI Variable Static Text",Helvetica,Arial,Oxygen-Sans,Roboto,Ubuntu,Sans-Serif;font-size:0.97rem;font-weight:normal;text-align:center;background:#F8F9FA;padding-bottom:3px}#btn:hover{background-image:linear-gradient(to bottom,#f8f9fa,#cecedd)}#btn:active,#btn:focus{color:#666;border:1px solid #4b8df8;outline:none}</style>
+<title>CMD.exe (Command Shell) - Windows CMD - SS64.com</title>
+<meta name=referrer content=no-referrer><link type=image/x-icon rel="shortcut icon" href="data:image/x-icon;base64,AAABAAMAMDAQAAEABABoBgAANgAAACAgAgABAAEAMAEAAJ4GAAAQEAIAAQABALAAAADOBwAAKAAAADAAAABgAAAAAQAEAAAAAACABAAAAAAAAAAAAAAQAAAAAAAAAMW/wADEv78AxL6/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiAiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoAAAAIAAAAEAAAAABAAEAAAAAAIAAAAAAAAAAAAAAAAIAAAAAAAAAxL6/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKAAAABAAAAAgAAAAAQABAAAAAABAAAAAAAAAAAAAAAACAAAAAAAAAMS+vwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="><link rel=canonical href=https://ss64.com/nt/cmd.html><meta http-equiv=content-security-policy content="default-src 'none'; font-src 'self' data:; img-src 'self' data:; style-src 'unsafe-inline'; media-src 'self' data:; script-src 'unsafe-inline' data:; object-src 'self' data:; frame-src 'self' data:;"><style>img[src="data:,"],source[src="data:,"]{display:none!important}</style></head><!-- #BeginLibraryItem "/Library/head_nt.lbi" --><body><div id=tnav><ul>
+<li class=tbtn><a href=https://ss64.com/>SS64</a></li>
+<li class=tbtn><a href=https://ss64.com/nt>CMD <svg viewBox="0 0 13 20.1" width=13 height=13 style=transform:rotate(0deg)><path d="M0 2.9l7.2 7.2-7.1 7.1L3 20.1l7.1-7.1 2.9-2.9L2.9 0 0 2.9"></path></svg></a></li>
+<li class=tbtn><a href=https://ss64.com/nt/syntax.html>How-to <svg viewBox="0 0 13 20.1" width=13 height=13 style=transform:rotate(0deg)><path d="M0 2.9l7.2 7.2-7.1 7.1L3 20.1l7.1-7.1 2.9-2.9L2.9 0 0 2.9"></path></svg></a></li>
+<li><div id=search><form action=https://www.google.com/search>
+<input type=text name=q id=qu size=27 maxlength=255 aria-label="Search text" value>
+<input class="submit mousetrap" value=Search id=btn type=submit>
+</form></div></li>
+</ul></div><h1>CMD.exe</h1> 
+<p>Start a new CMD shell and (optionally) run a command/executable program.</p>
+<pre>Syntax
+      CMD [<i>charset</i>] [<i>options</i>]
+
+      CMD [<i>charset</i>] [<i>options</i>] [/C <i>Command</i>] 
+
+      CMD [<i>charset</i>] [<i>options</i>] [/K <i>Command</i>] 
+
+Options   
+   /C     Run <i>Command</i> and then terminate
+
+   /K     Run <i>Command</i> and then remain open, at the CMD prompt.
+          This is useful for testing, e.g. to examine variables.
+
+   <i>Command</i> : The command, program or batch script to be run.
+             This can even be several commands separated with '<a href=https://ss64.com/nt/syntax-redirection.html>&amp;</a>' 
+             (the whole should also be surrounded by "quotes")
+
+   /T:<i>fg</i>  Sets the foreground/background <a href=https://ss64.com/nt/color.html>colours</a> 
+   
+   /A     Output ANSI characters.
+   /U     Output UNICODE characters (UCS-2 le).
+
+          These options will affect <a href=https://ss64.com/nt/syntax-redirection.html>piping or redirecting</a> to a file.
+          Most common text files are ANSI, use these switches when
+          you need to convert the character set.
+
+   /D     Ignore registry AutoRun commands
+          HKLM | HKCU \Software\Microsoft\Command Processor\AutoRun
+
+   /E:ON  Enable CMD Command Extensions (default)
+   /X     Enable CMD Command Extensions (old switch for compatibility)
+   /E:OFF Disable CMD Command Extensions
+   /Y     Disable CMD Command Extensions (old switch for compatibility)
+
+   /F:ON  Enable auto-completion of pathnames entered at the CMD prompt
+   /F:OFF Disable auto-completion of pathnames entered at the CMD prompt (default)</pre>
+<blockquote>
+<blockquote>
+<p>At the command prompt <span class=code>Ctrl-D</span> gives fol<b>d</b>er name completion and 
+<span class=code>Ctrl-F</span> gives <b>F</b>ile and folder name completion.<br>
+<br>
+These key-strokes will display the
+first matching path. Thereafter, repeated pressing of the same control
+key will cycle through the list of matching paths. Pressing SHIFT
+with the control key will move through the list backwards.</p>
+</blockquote>
+</blockquote>
+<pre>   /Q    Turn echo off
+
+   /S    Strip " quote characters from <i>command.
+</i>         If <i>command</i> starts with a quote, the first and last quote chars in <i>command</i>
+         will be removed, whether /s is specified or not.
+
+   /V:ON Enable <a href=https://ss64.com/nt/setlocal.html>delayed environment variable expansion</a> 
+         this allows a FOR loop to specify !variable! instead of %variable% 
+         expanding the variable at execution time instead of at input time. 
+   
+   /V:OFF
+         Disable delayed environment expansion.
+         Delayed Environment expansion can also be set with <a href=https://ss64.com/nt/setlocal.html>SETLOCAL</a></pre>
+<p>If /C or /K is specified, then the remainder of the command line is 
+processed as an immediate command in the new shell. Multiple commands
+separated by the command separator '&amp;' or '<a href=https://ss64.com/nt/syntax-redirection.html>&amp;&amp;</a>' are accepted if surrounded by quotes.</p>
+<p>In Windows Explorer, you can type "<span class=code>cmd</span>" in the address bar to open a prompt at the current location.<br>
+For more detail about the CMD shell: QuickEdit, handing quotes, max line length etc, see the <a href=https://ss64.com/nt/syntax-cmd.html>CMD Syntax page</a>.</p>
+<p>If you start a second nested CMD shell (or PowerShell), this will be added to the <a href=https://ss64.com/nt/title.html>TITLE</a> of the CMD/terminal window, when you <a href=https://ss64.com/nt/exit.html>EXIT</a> back to the initial shell, the Title will also revert making it possible to track how many nested shells you have open.</p>
+<h2>ErrorLevel</h2>
+<blockquote>
+<p> CMD /C will return an errorlevel, for example <span class=code>CMD /c dir Z: </span>where the drive Z: does not exist, will return %errorlevel% = 1 to the calling CMD shell.</p>
+</blockquote>
+<h2>Launching CMD/batch files from a UNC path</h2>
+<blockquote>
+<p>While most command line utilities do fully support UNC paths, they cannot be set as the <a href=https://ss64.com/nt/cd.html>current directory</a>. Launching a batch file from a UNC path will implicitly run CMD.exe with that UNC path, this will often return the error: <i>path is an invalid current directory path. UNC paths are not supported. Defaulting to Windows directory.</i><br>
+This can be dangerous if your batch file makes any assumptions about the current directory,<br>
+e.g. if it includes the line <span class=code>DEL&nbsp;*.ico</span>, that will delete .ico files from the Windows directory instead of the folder where the batch file resides.<br>
+If you are confident that the batch file won’t be affected by this, you can suppress the error in one of two ways: Add a <a href=https://ss64.com/nt/cls.html>CLS</a> command as the first line of the batch script, or add the registry key <span class=code>DisableUNCCheck</span> as described in <a href=https://web.archive.org/web/20150312195558/https://support.microsoft.com/en-us/kb/156276>Q156276</a></p>
+<p>Alternatively start the batch file with <span class=code><a href=https://ss64.com/nt/pushd.html>pushd</a> "%~dp0"</span><br>
+That will change directory to your batch file location (<span class=code><a href=https://ss64.com/nt/syntax-args.html>%0</a></span>), and for UNC paths it will auto-create a temporary drive map.<br>
+</p>
+</blockquote>
+<h2>Launching CMD/batch files from PowerShell</h2>
+<blockquote>
+<p>When calling CMD from PowerShell the <span class=code>--%</span> operator can be used to control when $ symbols and quoted expressions will be interpreted/expanded by PowerShell:</p>
+<p class=code>cmd.exe <b>--%</b> /c dir "C:\financial $accounts\" /w</p>
+<p>Anything to the left of <span class=code>--%</span> will be expanded:</p>
+<p class=code>$folder = 'C:\financial $accounts\'<br>
+cmd.exe /c dir $folder <b>--%</b>/w</p>
+</blockquote>
+<h2>Inheritance</h2>
+<blockquote>
+<p>A new CMD.exe session can be instantiated in several ways, explicitly starting a new CMD session from an existing CMD shell, CALLing a batch file or implicit instantiation caused by piping a command or running a <a href=https://ss64.com/nt/for_cmd.html>FOR /F</a> command. </p>
+<p>In all these cases, only the <a href=https://ss64.com/nt/syntax-variables.html>environment variable</a> values are inherited by the new CMD session. Delayed expansion state, Command extension state and Echo state will all revert back to the default state based on the registry.<br>
+For more detail on inheritance and expansion see <a href=https://stackoverflow.com/questions/8192318/why-does-delayed-expansion-fail-when-inside-a-piped-block-of-code>this StackOverflow</a> thread. </p>
+</blockquote>
+<h2><a id=commandextensions></a>Command Extensions</h2>
+<blockquote>
+<p> Disabling Command Extensions may affect the operation of CMD's <a href=https://ss64.com/nt/syntax-internal.html>internal</a> commands, and will also remove most <a href=https://ss64.com/nt/syntax-variables.html>dynamic/volatile environment variables</a> ( <span class=code>%CD% %DATE% %TIME% %RANDOM% %ERRORLEVEL% %CMDEXTVERSION% %CMDCMDLINE% %HIGHESTNUMANODENUMBER%</span> ) </p>
+<p>Command Extensions are enabled by default. <br>
+This can be changed 
+ by setting a value in the registry: <span class=code>HKCU\Software\Microsoft\Command Processor\EnableExtensions</span><br>
+Command 
+Extensions can also be turned on or off by running <span class=code>CMD /e:on</span> or <span class=code>CMD /e:off<br>
+</span> or run <span class=code><a href=https://ss64.com/nt/setlocal.html>SETLOCAL</a> EnableExtensions</span> (SetLocal will take precedence)</p>
+<p>Forum thread: <a href="https://ss64.org/viewtopic.php?f=2&amp;t=33">Checking if command extensions are available</a>.<br>
+StackOverflow: <a href=https://stackoverflow.com/q/71373925/1720814>Detail of the changes when disabling extensions</a>. </p>
+</blockquote>
+<h3><a id=e></a>Examples</h3>
+<p>Run a program and pass a Filename parameter:<br>
+<span class=code> CMD /c write.exe c:\docs\sample.txt</span></p>
+<p>Run a program and pass a Long Filename:<br>
+<span class=code> CMD /c write.exe "c:\sample documents\sample.txt"</span></p>
+<p>Spaces in Program Path:<br>
+<span class=code> CMD /c ""c:\Program Files\Microsoft Office\Office\Winword.exe""</span></p>
+<p>Spaces in Program Path + parameters:<br>
+<span class=code> CMD /c ""c:\Program Files\demo.cmd"" Parameter1 Param2</span></p>
+<p>Spaces in Program Path + parameters with spaces:<br>
+<span class=code>CMD /k ""c:\batch files\demo.cmd" "Parameter 1 with space" "Parameter2 with space""<br>
+<br>
+</span>CMD will strip the outer quotes if there is a double quote at the <b>start</b> and <b>end</b> so you can also cheat and write the above as:<br>
+<span class=code>CMD /k @"c:\batch files\demo.cmd" "Parameter 1 with space" "Parameter2 with space"</span></p>
+<p>Launch Demo1 and then Launch Demo2:<br>
+<span class=code> CMD /c ""c:\Program Files\demo1.cmd" &amp; "c:\Program Files\demo2.cmd""</span></p>
+<p class=quote>“Those who can command themselves, command others” ~ Hazlitt</p>
+<h3>Related commands</h3>
+<p class=space><a href=https://ss64.com/nt/syntax-cmd.html>CMD Shell</a> - Tips on working in the Windows CMD shell.<br>
+<a href=https://ss64.com/nt/exit.html>EXIT</a> - Use this to close a CMD shell and return. <br>
+<a href=https://ss64.com/nt/call.html>CALL</a> - Call one batch program from another.<br>
+<a href=https://ss64.com/nt/start.html>START</a> - Run a program, command or batch file.<br>
+<a href=https://ss64.com/nt/doskey.html>DOSKEY</a> - Edit command line, recall commands.<br>
+<a href=https://ss64.com/nt/syntax-internal.html>CMD Internal</a> - Commands that are Internal to the CMD shell.<br>
+<a href=https://ss64.com/nt/wt.html>WT</a> - Windows Terminal.<br>
+<a href=https://jpsoft.com/>4NT</a> - Terminal and Shell replacement for CMD.exe (not free).<br>
+<a href=https://web.archive.org/web/20150110101407/https://support.microsoft.com/kb/156276>Q156276</a> - Cmd does not support UNC names as the current directory.<br>
+Equivalent PowerShell: You can run the CMD shell under PowerShell, Exit will return you to the PS prompt. <br>
+Equivalent bash command (Linux): bash - run the bash shell (also csh, ksh, sh).</p>
+<div id=27677x300x250x4627x_ADSLOT1 clicktrack=%%CLICK_URL_ESC%%></div>
+<hr>
+<div id=bl>&nbsp;</div>
+<div id=br>Copyright © 1999-2024 <a href=https://ss64.com/>SS64.com</a><br>
+Some rights reserved</div>
+<iframe name=__tcfapiLocator style=display:none></iframe>
