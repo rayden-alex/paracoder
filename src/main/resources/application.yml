@@ -21,4 +21,15 @@ spring:
 #  usage:
 #    width: 120
 
+  application:
+    name: ParaCoder
 
+    admin:
+      enabled: false
+
+  jmx:
+    enabled: false
+
+  sql:
+    init:
+      enabled: false

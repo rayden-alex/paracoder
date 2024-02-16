@@ -25,6 +25,15 @@ public class ParallelCoderApplication {
         } catch (ClassNotFoundException _) {
         }
 
+        createShutdownHook();
+
+        // Optionally remove existing handlers attached to j.u.l root logger
+//        SLF4JBridgeHandler.removeHandlersForRootLogger();  // (since SLF4J 1.6.5)
+
+        // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
+        // the initialization phase of your application
+//        SLF4JBridgeHandler.install();
+
         // Now I use OS native call to delete files to recycle bin (instead of Desktop.getDesktop().moveToTrash())
         // so no need to set "java.awt.headless" property to init AWT.
         ConfigurableApplicationContext applicationContext = new SpringApplicationBuilder(ParallelCoderApplication.class)
@@ -34,13 +43,14 @@ public class ParallelCoderApplication {
             .logStartupInfo(false)
             .run(args);
 
-        createShutdownHook();
-
         int exitCode = SpringApplication.exit(applicationContext);
         log.info("ParaCoder completed.");
         System.exit(exitCode);
     }
 
+    /**
+     * Just in case, we destroy all child processes that could remain in progress
+     */
     private static void createShutdownHook() {
         Thread shutdownHook = new Thread(ParallelCoderApplication::destroyDescendantOnMainProcessExit);
         Runtime.getRuntime().addShutdownHook(shutdownHook);

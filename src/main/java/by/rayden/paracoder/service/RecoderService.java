@@ -2,6 +2,7 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.cli.command.CommandController;
 import by.rayden.paracoder.config.PatternProperties;
+import by.rayden.paracoder.utils.OutUtils;
 import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -43,15 +43,15 @@ public class RecoderService {
     public static final Pattern LAST_QUOTED_STRING_PATTERN = Pattern.compile("\"(?<targetFile>[^\"]+?)\"$");
 
     private final PatternProperties patternProperties;
-    private final ProcessFactory processFactory;
+    private final ProcessRunner processRunner;
     private final RecodeCommand recodeCommand;
     private final OsNative osNative;
 
     private CommandController.Params paraCoderParams;
 
-    public RecoderService(ProcessFactory processFactory, RecodeCommand recodeCommand,
+    public RecoderService(ProcessRunner processRunner, RecodeCommand recodeCommand,
                           PatternProperties patternProperties, OsNative osNative) {
-        this.processFactory = processFactory;
+        this.processRunner = processRunner;
         this.recodeCommand = recodeCommand;
         this.patternProperties = patternProperties;
         this.osNative = osNative;
@@ -69,11 +69,11 @@ public class RecoderService {
             processDirs(pathMap);
 
             System.out.println();
-            System.out.println(CommandLine.Help.Ansi.ON.string(STR."@|blue Max exit code: \{maxExitCode}|@"));
+            OutUtils.ansiOut(STR."@|blue Max exit code: \{maxExitCode}|@");
             return maxExitCode;
         } catch (Exception e) {
             log.error("Recode error: {}", e.getMessage(), e);
-            System.err.println(CommandLine.Help.Ansi.ON.string(STR."Error: @|red \{e.getMessage()}|@"));
+            OutUtils.ansiErr(STR."Error: @|red \{e.getMessage()}|@");
             return CommandLine.ExitCode.SOFTWARE;
         }
     }
@@ -113,7 +113,7 @@ public class RecoderService {
                       .filter(entry -> entry.getValue().isRegularFile())
                       .sorted(Map.Entry.comparingByKey())
                       .map(this::processFile)
-                      .collect(Collectors.toList());
+                      .toList();
     }
 
     /**
@@ -133,13 +133,13 @@ public class RecoderService {
         FileTime sourceFileTime = entry.getValue().lastModifiedTime();
 
         if (!sourceFilePath.toFile().exists()) {
-            System.err.println(CommandLine.Help.Ansi.ON.string(STR."Can't process source file: @|red \{sourceFilePath}|@"));
+            OutUtils.ansiErr(STR."Can't process source file: @|red \{sourceFilePath}|@");
             return CompletableFuture.completedFuture(CommandLine.ExitCode.SOFTWARE);
         }
 
         String command = this.recodeCommand.getCommand(sourceFilePath);
 
-        return this.processFactory
+        return this.processRunner
                    .execCommandAsync(command, sourceFilePath)
                    .orTimeout(10, TimeUnit.MINUTES) //??
                    .thenApply(preserveTimestampAction(command, sourceFileTime))
@@ -173,12 +173,10 @@ public class RecoderService {
         return (exitCode, t) -> {
             if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
                 log.debug("Completed OK {}", sourceFilePath);
-                System.out.println(CommandLine.Help.Ansi.ON.string(STR."""
-                    Completed: @|blue \{sourceFilePath}|@"""));
+                OutUtils.ansiOut(STR."Completed: @|blue \{sourceFilePath}|@");
             } else {
                 log.error("Error on processing source file: {}", sourceFilePath, t);
-                System.err.println(CommandLine.Help.Ansi.ON.string(STR."""
-                @|red Error on processing source file: \{sourceFilePath}|@"""));
+                OutUtils.ansiErr(STR." @|red Error on processing source file: \{sourceFilePath}|@");
             }
         };
     }
@@ -224,7 +222,7 @@ public class RecoderService {
         FileTime sourceDirTime = entry.getValue().lastModifiedTime();
 
         if (this.paraCoderParams.preserveDirTimestamp()) {
-            System.out.println(CommandLine.Help.Ansi.ON.string(STR."Processing dir: @|cyan \{dirPath}|@"));
+            OutUtils.ansiOut(STR."Processing dir: @|cyan \{dirPath}|@");
             setFileLastModifiedTime(dir, sourceDirTime);
         }
     }
