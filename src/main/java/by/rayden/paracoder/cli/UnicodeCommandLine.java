@@ -5,6 +5,7 @@ import by.rayden.paracoder.win32native.OsNative;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -45,6 +46,8 @@ public class UnicodeCommandLine {
 
     @VisibleForTesting
     protected List<String> getArgumentsOnly(String[] commandLine) {
+        final String appMainClassName = ParallelCoderApplication.class.getName();
+
         boolean isArgsStartFound = false;
         List<String> argumentsOnly = new ArrayList<>();
 
@@ -54,14 +57,14 @@ public class UnicodeCommandLine {
             if (isArgsStartFound) {
                 argumentsOnly.add(param);
 
-            } else if ("-jar".equals(param)
+            } else if ("-jar".equalsIgnoreCase(param)
                 && ((i + 1) < commandLine.length)
-                && commandLine[i + 1].endsWith(".jar")) {
+                && StringUtils.endsWithIgnoreCase(commandLine[i + 1], ".jar")) {
                 // program args after jar file name
                 isArgsStartFound = true;
                 i++;
 
-            } else if (param.equals(ParallelCoderApplication.class.getName())) {
+            } else if (param.equals(appMainClassName)) {
                 // program args after main class name
                 isArgsStartFound = true;
             }
@@ -71,10 +74,12 @@ public class UnicodeCommandLine {
 
     @VisibleForTesting
     protected String getJarFileName(String codeSourcePath) {
-        return codeSourcePath.toLowerCase().endsWith(".jar") ? Path.of(codeSourcePath).getFileName().toString() : "";
+        return StringUtils.endsWithIgnoreCase(codeSourcePath, ".jar")
+            ? Path.of(codeSourcePath).getFileName().toString() : "";
     }
 
     /**
+     * Warning! Not working for me.
      * @return JarPath or empty string when App running NOT from jar but from pure class.
      * @throws URISyntaxException if URL cannot be converted to a URI.
      */
