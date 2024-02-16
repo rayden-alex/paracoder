@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false">
+<!--    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">-->
+<!--        &lt;!&ndash; reset all previous level configurations of all j.u.l. loggers &ndash;&gt;-->
+<!--        <resetJUL>true</resetJUL>-->
+<!--    </contextListener>-->
+
     <!--    <include resource="org/springframework/boot/logging/logback/defaults.xml" />-->
     <property name="DEV_HOME" value="log"/>
     <!--    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>-->
@@ -17,7 +22,7 @@
         <file>${DEV_HOME}/paracoder.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>paracoder.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${DEV_HOME}/paracoder.%d{yyyy-MM-dd}.log</fileNamePattern>
 
             <!-- keep 3 days' worth of history capped at 5MB total size -->
             <maxHistory>3</maxHistory>
@@ -40,6 +45,7 @@
 <!--    </appender>-->
 
     <logger name="by.rayden.paracoder" level="DEBUG"/>
+    <logger name="java.lang.ProcessBuilder" level="TRACE" />
 
     <root level="WARN" additivity="false">
         <appender-ref ref="FILE"/>
