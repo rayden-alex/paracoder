@@ -2,13 +2,13 @@ import java.text.SimpleDateFormat
 
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.2.1'
+	id 'org.springframework.boot' version '3.2.2'
 	id 'io.spring.dependency-management' version '1.1.4'
 //	id 'org.graalvm.buildtools.native' version '0.9.28'
 }
 
 group = 'by.rayden'
-version = '1.0.2'
+version = '1.0.3'
 
 java {
 	sourceCompatibility = '21'
@@ -19,11 +19,15 @@ configurations {
 		extendsFrom annotationProcessor
 	}
 
-	all {
-		exclude group: 'io.micrometer'
-	}
+	byteBuddyAgent
 }
 
+configurations.configureEach {
+//	https://gradlehero.com/how-to-exclude-gradle-dependencies/
+	exclude group: 'io.micrometer'
+	exclude group: 'org.apache.logging.log4j'
+	exclude group: 'org.slf4j', module:'jul-to-slf4j'
+}
 
 repositories {
 	mavenCentral()
@@ -40,28 +44,41 @@ dependencies {
 	implementation 'info.picocli:picocli-spring-boot-starter:4.7.5'
 	implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
 	implementation 'commons-io:commons-io:2.11.0'
-//	implementation 'net.java.dev.jna:jna-platform:5.13.0'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	byteBuddyAgent "net.bytebuddy:byte-buddy-agent"
 }
 
 tasks.withType(JavaCompile).configureEach {
 	options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
-}
 
-//Enable JDK21 preview features, see https://docs.gradle.org/current/userguide/building_java_projects.html#sec:feature_preview
-tasks.withType(JavaCompile).configureEach {
+	//Enable JDK21 preview features, see https://docs.gradle.org/current/userguide/building_java_projects.html#sec:feature_preview
 	options.compilerArgs += "--enable-preview"
+
+	// https://gist.github.com/rponte/d660919434d094bbd35a1aabf7ef1bf0
+	// Although Spring Boot Gradle Plugin configures any JavaCompile tasks with no configured encoding to use UTF-8.
+	// https://docs.spring.io/spring-boot/docs/3.2.2/gradle-plugin/reference/htmlsingle/#reacting-to-other-plugins.java
+	options.encoding = "UTF-8"
 }
 
 tasks.withType(Test).configureEach {
 	jvmArgs += "--enable-preview"
+
+	// To get rid of "WARNING: A Java agent has been loaded dynamically ... byte-buddy-agent..."
+	// https://github.com/raphw/byte-buddy/discussions/1535
+	jvmArgs += "-javaagent:${configurations.byteBuddyAgent.singleFile}"
+	defaultCharacterEncoding = "UTF-8"
 }
 
 tasks.withType(JavaExec).configureEach {
 	jvmArgs += "--enable-preview"
+}
+
+tasks.withType(Javadoc).configureEach {
+	options.encoding = "UTF-8"
 }
 
 def generatedResources = "$buildDir/generated-resources/main"
@@ -87,6 +104,6 @@ Application-name: $rootProject.name
 	}
 }
 
-tasks.named('test') {
+test {
 	useJUnitPlatform()
 }

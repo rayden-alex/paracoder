@@ -7,8 +7,8 @@ pattern:
 
   commandTemplate:
     flac: >-
-      c:\Rip\opus-tools\opusenc.exe --quiet --music --vbr --bitrate 192 "{{F}}" "{{D}}{{P}}{{N}}.opus"
+      "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate 192 "{{F}}" "{{D}}{{P}}{{N}}.opus"
     wav: >-
       "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate 192 "{{F}}" "{{D}}{{P}}{{N}}.opus"
     any: >-
-      c:\Rip\ffmpeg\bin\ffmpeg.exe -hide_banner -loglevel error -nostats -nostdin -i "{{F}}" -c:v copy -c:a flac -f flac - | c:\Rip\opus-tools\opusenc.exe --quiet --music --vbr --bitrate 192 - "{{D}}{{P}}{{N}}.opus"
+      "c:\Rip\ffmpeg\bin\ffmpeg.exe" -hide_banner -loglevel error -nostats -nostdin -i "{{F}}" -c:v copy -c:a flac -f flac - | "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate 192 - "{{D}}{{P}}{{N}}.opus"
