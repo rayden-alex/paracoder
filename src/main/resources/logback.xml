@@ -6,7 +6,7 @@
 <!--    </contextListener>-->
 
     <!--    <include resource="org/springframework/boot/logging/logback/defaults.xml" />-->
-    <property name="DEV_HOME" value="log"/>
+    <property name="LOG_HOME" value="log"/>
     <!--    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>-->
 <!--    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">-->
 <!--        <target>System.out</target>-->
@@ -19,7 +19,7 @@
 <!--    </appender>-->
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${DEV_HOME}/paracoder.log</file>
+        <file>${LOG_HOME}/paracoder.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
             <fileNamePattern>${DEV_HOME}/paracoder.%d{yyyy-MM-dd}.log</fileNamePattern>
