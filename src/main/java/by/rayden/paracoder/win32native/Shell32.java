@@ -134,9 +134,10 @@ interface Shell32 extends StdCallLibrary {
             StringBuilder encoded = new StringBuilder();
             for (String path : paths) {
                 encoded.append(path);
-                encoded.append("\0");
+                encoded.append('\0');
             }
-            return encoded + "\0";
+            encoded.append('\0');
+            return encoded.toString();
         }
     }
 

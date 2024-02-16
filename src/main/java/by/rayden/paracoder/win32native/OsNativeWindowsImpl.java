@@ -33,7 +33,8 @@ public class OsNativeWindowsImpl implements OsNative {
      *                  executable file.
      * @return An array of strings, similar to {@code argv}.
      */
-    private String[] getCommandLineToArgv(WString lpCmdLine) {
+    @Override
+    public String[] getCommandLineToArgv(WString lpCmdLine) {
         IntByReference nArgs = new IntByReference();
         Pointer strArr = Shell32.INSTANCE.CommandLineToArgvW(lpCmdLine, nArgs);
         if (strArr != null) {
