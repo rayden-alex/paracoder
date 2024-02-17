@@ -22,7 +22,7 @@
         <file>${LOG_HOME}/paracoder.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>${DEV_HOME}/paracoder.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_HOME}/paracoder.%d{yyyy-MM-dd}.log</fileNamePattern>
 
             <!-- keep 3 days' worth of history capped at 5MB total size -->
             <maxHistory>3</maxHistory>

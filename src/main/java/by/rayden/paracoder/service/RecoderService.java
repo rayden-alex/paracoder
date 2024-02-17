@@ -172,7 +172,7 @@ public class RecoderService {
     private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
         return (exitCode, t) -> {
             if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
-                log.debug("Completed OK {}", sourceFilePath);
+                log.info("Completed OK {}", sourceFilePath);
                 OutUtils.ansiOut(STR."Completed: @|blue \{sourceFilePath}|@");
             } else {
                 log.error("Error on processing source file: {}", sourceFilePath, t);
@@ -224,6 +224,7 @@ public class RecoderService {
         if (this.paraCoderParams.preserveDirTimestamp()) {
             OutUtils.ansiOut(STR."Processing dir: @|cyan \{dirPath}|@");
             setFileLastModifiedTime(dir, sourceDirTime);
+            log.info("Completed dir OK {}", dirPath);
         }
     }
 
