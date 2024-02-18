@@ -4,14 +4,16 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * The properties are stored in the external "paracoder_commands.yml" file
+ * and loaded by using the "spring.config.import" property in the "application.yml".
+ */
 @Configuration
 @ConfigurationProperties(prefix = "pattern")
-@PropertySource(value = "file:${commands:paracoder_commands.yml}", factory = YamlPropertySourceFactory.class)
 @Getter
 @Setter
 public class PatternProperties {
