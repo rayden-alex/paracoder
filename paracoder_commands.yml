@@ -5,10 +5,11 @@ defaults:
 pattern:
   fileExtensions:
     - flac
-    - m4a
+#    - m4a
     - wav
     - ape
     - dts
+    - wv
 
   commandTemplate:
     flac: >-
