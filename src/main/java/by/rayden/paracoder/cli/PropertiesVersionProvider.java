@@ -2,10 +2,7 @@ package by.rayden.paracoder.cli;
 
 import picocli.CommandLine.IVersionProvider;
 
-import java.io.InputStream;
-import java.net.URL;
 import java.util.Properties;
-
 
 /**
  * Demonstrates a {@link IVersionProvider} implementation that reads version information from a
@@ -42,17 +39,17 @@ import java.util.Properties;
  */
 public class PropertiesVersionProvider implements IVersionProvider {
     public String[] getVersion() throws Exception {
-        URL url = getClass().getResource("/version.txt");
-        if (url == null) {
-            return new String[]{"No version.txt file found in the classpath."};
-        }
         var properties = new Properties();
-        try (InputStream stream = url.openStream()) {
+        // The file name must begin with a '/' to use an absolute path,
+        // otherwise the relative path to current class will be used.
+        try (var stream = getClass().getResourceAsStream("/version.txt")) {
             properties.load(stream);
         }
         return new String[]{
             STR."\{properties.getProperty("Application-name")} version @|bold,yellow \"\{properties.getProperty("Version")}\"|@",
-            STR."Built: @|yellow \{properties.getProperty("Buildtime")}|@",
+            STR."Build-date: @|yellow \{properties.getProperty("Build-date")}|@",
+            STR."Revision: @|yellow \{properties.getProperty("Revision")}|@",
+            STR."Revision-date: @|yellow \{properties.getProperty("Revision-date")}|@"
         };
     }
 }
