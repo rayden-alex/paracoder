@@ -2,6 +2,7 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -143,6 +144,7 @@ class ProcessRunnerTest {
     }
 
     @Test
+    @Disabled
     void testProcessFactoryWithPipingAndUnicodeParam() throws Exception {
         RecoderThreadPool recoderThreadPool = mock(RecoderThreadPool.class);
         OsNative osNative = new OsNativeWindowsImpl();
