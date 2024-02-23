@@ -1,10 +1,13 @@
-import java.text.SimpleDateFormat
-
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.2.2'
     id 'io.spring.dependency-management' version '1.1.4'
     id 'me.qoomon.git-versioning' version '6.4.3'
+
+    // Generating a git.properties file containing information about the state of your git source code repository when the project was built
+    // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
+    // https://github.com/n0mer/gradle-git-properties
+    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 
 //	id 'org.graalvm.buildtools.native' version '0.9.28'
 }
@@ -33,9 +36,44 @@ gitVersioning.apply {
 //    updateGradleProperties = true
 }
 
+gitProperties {
+    extProperty = 'gitProps' // git properties will be put in a map at project.ext.gitProps
+
+    // fine-grained control of the content of git.properties
+    keys = [
+            'git.branch',
+            'git.build.version',
+            'git.closest.tag.commit.count',
+            'git.closest.tag.name',
+            'git.commit.id',
+            'git.commit.id.abbrev',
+            'git.commit.id.describe',
+            'git.commit.time',
+            'git.dirty',
+            'git.tags',
+            'git.total.commit.count'
+    ]
+}
+generateGitProperties.outputs.upToDateWhen { false } // make sure the generateGitProperties task always executes (even when git.properties is not changed)
+
+
 bootJar {
     // Locking the file name to avoid changing it every time in cmd-scripts
     archiveFileName = 'ParaCoder.jar'
+
+    manifest {
+        // Filling the manifest attribute using the git property.
+        attributes('Build-Revision': "${-> project.ext.gitProps['git.commit.id.abbrev']}"  // Use GString lazy evaluation to delay until git properties are populated
+        )
+    }
+}
+
+springBoot {
+    // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-info
+    // https://docs.spring.io/spring-boot/docs/3.2.3/gradle-plugin/reference/htmlsingle/#integrating-with-actuator.build-info
+    // This will configure a BuildInfo task named bootBuildInfo.
+    // A BuildInfo task is provided to generate " "build/resources/main/META-INF/build-info.properties"
+    buildInfo()
 }
 
 java {
@@ -106,32 +144,6 @@ tasks.withType(JavaExec).configureEach {
 
 tasks.withType(Javadoc).configureEach {
     options.encoding = "UTF-8"
-}
-
-def generatedResourcesDir = "${layout.buildDirectory.get()}/generated-resources/main"
-sourceSets {
-    main {
-        //Register an output folder on the main SourceSet:
-        output.dir(generatedResourcesDir, builtBy: 'generateVersionTxt')
-        //It is now a part of the 'main' classpath and will be a part of the jar
-    }
-}
-
-//A task that generates the "version.txt" resources:
-tasks.register('generateVersionTxt', WriteProperties) {
-    description 'Creates a version.txt file with build info that is added to the root of the jar'
-
-    destinationFile.value layout.buildDirectory.file(generatedResourcesDir + '/version.txt')
-
-    property 'Version', project.version
-    property 'Build-date', "${new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())}"
-    property 'Revision', "${project.properties["git.commit.short"]}"
-    property 'Revision-date', "${project.properties["git.commit.timestamp.datetime"]}"
-    property 'Application-name', project.name
-
-    doLast {
-        println("generateVersionTxt executed")
-    }
 }
 
 tasks.register('versionDebug') {
