@@ -62,7 +62,11 @@ public class ProcessRunner {
     }
 
     @VisibleForTesting
-    Process runProcess(String recodeCommand, boolean useRedirects) throws IOException {
+    Process runProcessWithoutRedirect(String recodeCommand) throws IOException {
+        return runProcess(recodeCommand, false);
+    }
+
+    private Process runProcess(String recodeCommand, boolean useRedirects) throws IOException {
         List<ProcessBuilder> builders = makeProcessBuilders(recodeCommand);
         if (useRedirects) {
             applyRedirects(builders);

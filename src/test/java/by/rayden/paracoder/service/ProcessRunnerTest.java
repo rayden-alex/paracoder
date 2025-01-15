@@ -2,7 +2,6 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -10,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 class ProcessRunnerTest {
 
     private static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
-    private static final Charset PROCESS_CHARSET = Charset.forName("cp866");
+    private static final Charset PROCESS_CHARSET = StandardCharsets.UTF_8;
 
     @Test
     void testShowArgs() throws Exception {
@@ -112,7 +112,7 @@ class ProcessRunnerTest {
         OsNative osNative = new OsNativeWindowsImpl();
         ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
 
-        Process process = processRunner.runProcess("src\\test\\resources\\ShowArgs.exe p1 p2", false);
+        Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 p2");
         ProcessResult res = execCapturedProcess(process);
 
         assertThat(res.err).isEmpty();
@@ -130,8 +130,8 @@ class ProcessRunnerTest {
         OsNative osNative = new OsNativeWindowsImpl();
         ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
 
-        Process process = processRunner.runProcess("src\\test\\resources\\ShowArgs.exe p1 \"p2 3\" | more.com /C",
-            false);
+        Process process = processRunner
+            .runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \"p2 3\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
         assertThat(res.err).isEmpty();
@@ -144,14 +144,14 @@ class ProcessRunnerTest {
     }
 
     @Test
-    @Disabled
     void testProcessFactoryWithPipingAndUnicodeParam() throws Exception {
         RecoderThreadPool recoderThreadPool = mock(RecoderThreadPool.class);
         OsNative osNative = new OsNativeWindowsImpl();
         ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
+        String unicodeFileName = "ბენდი sløwed L‘ÂME фыва 💃🕺🎼.flac";
 
-        Process process = processRunner.runProcess("src\\test\\resources\\ShowArgs.exe p1 ნიკოს | more.com /C",
-            false);
+        Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \""
+            + unicodeFileName + "\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
         assertThat(res.err).isEmpty();
@@ -160,12 +160,10 @@ class ProcessRunnerTest {
         assertThat(args).hasSize(3);
         assertThat(args.get(0)).endsWith("ShowArgs.exe");
         assertThat(args.get(1)).isEqualTo("p1");
-        assertThat(args.get(2)).isEqualTo("ნიკოს");
+        assertThat(args.get(2)).isEqualTo(unicodeFileName);
     }
 
-
     private record ProcessResult(int exitCode, String out, String err) {
-
     }
 
     private ProcessResult execCapturedProcess(String... commands) throws Exception {

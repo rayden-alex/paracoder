@@ -65,7 +65,11 @@ public class UnicodeCommandLine {
                 i++;
 
             } else if (param.equals(appMainClassName)) {
-                // program args after main class name
+                // program args are defined after the main class name
+                isArgsStartFound = true;
+
+            } else if (StringUtils.endsWithIgnoreCase(param, "ParaCoder.exe")) {
+                // program args are defined after the exe-file name
                 isArgsStartFound = true;
             }
         }

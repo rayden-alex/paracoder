@@ -9,7 +9,7 @@ plugins {
     // https://github.com/n0mer/gradle-git-properties
     id 'com.gorylenko.gradle-git-properties' version '2.4.1'
 
-//	id 'org.graalvm.buildtools.native' version '0.9.28'
+    id 'org.graalvm.buildtools.native' version '0.10.1'
 }
 
 group = 'by.rayden'
@@ -87,6 +87,7 @@ configurations {
     }
 
     byteBuddyAgent
+    generateConfig
 }
 
 configurations.configureEach {
@@ -109,7 +110,7 @@ dependencies {
     implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
     implementation 'commons-io:commons-io:2.11.0'
     compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
+    generateConfig 'info.picocli:picocli-codegen:4.7.5'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
@@ -117,6 +118,7 @@ dependencies {
 }
 
 tasks.withType(JavaCompile).configureEach {
+    // Specifies options to pass to picocli annotation processor (-Akey[=value]).
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 
     //Enable JDK21 preview features, see https://docs.gradle.org/current/userguide/building_java_projects.html#sec:feature_preview
@@ -159,3 +161,57 @@ tasks.register('versionDebug') {
 test {
     useJUnitPlatform()
 }
+
+graalvmNative {
+    agent {
+        defaultMode = "standard" // Default agent mode if one isn't specified using `-Pagent=mode_name`
+        enabled = true // Enables the agent
+
+        // Copies metadata collected from tasks into the specified directories.
+        metadataCopy {
+            inputTaskNames.add("bootRun") // Tasks previously executed with the agent attached.
+//            inputTaskNames.add("collectReachabilityMetadata") // Tasks previously executed with the agent attached.
+            outputDirectories.add("src/main/resources/META-INF/native-image") // Copies the metadata collected by the agent into the project sources
+            mergeWithExisting = true // Instead of copying, merge with existing metadata in the output directories.
+        }
+    }
+
+    binaries {
+        main {
+            // Main options
+            debug = false // Determines if debug info should be generated, defaults to false (alternatively add --debug-native to the CLI)
+            verbose = false // Add verbose output, defaults to false
+
+            // Advanced options
+            buildArgs.add('--enable-preview') // Passes '--enable-preview' to the native image builder options. This can be used to pass parameters which are not directly supported by this extension
+            buildArgs.add('-Dsun.native.encoding=UTF-8')
+
+            jvmArgs.add('--enable-preview') // Passes '--enable-preview' directly to the JVM running the native image builder
+            jvmArgs.add('-Dfile.encoding=UTF-8')
+            jvmArgs.add('-Dsun.native.encoding=UTF-8')
+            jvmArgs.add('-Dsun.stdout.encoding=UTF-8')
+            jvmArgs.add('-Dsun.stderr.encoding=UTF-8')
+
+        }
+    }
+}
+
+tasks.register('generateGraalReflectionConfig', JavaExec) {
+    enabled = false
+    dependsOn 'classes'
+    mainClass = 'picocli.codegen.aot.graalvm.ReflectionConfigGenerator'
+    classpath = configurations.generateConfig + sourceSets.main.runtimeClasspath
+    def outputFile = "${buildDir}/resources/main/META-INF/native-image/${project.group}/${project.name}/reflect-config.json"
+    args = ["--output=$outputFile", 'by.rayden.paracoder.cli.command.CommandController']
+}
+assemble.dependsOn generateGraalReflectionConfig
+
+tasks.register('generateGraalDynamicProxyConfig', JavaExec) {
+    enabled = false
+    dependsOn 'classes'
+    mainClass = 'picocli.codegen.aot.graalvm.DynamicProxyConfigGenerator'
+    classpath = configurations.generateConfig + sourceSets.main.runtimeClasspath
+    def outputFile = "${buildDir}/resources/main/META-INF/native-image/${project.group}/${project.name}/proxy-config.json"
+    args = ["--output=$outputFile", 'by.rayden.paracoder.cli.command.CommandController']
+}
+assemble.dependsOn generateGraalDynamicProxyConfig

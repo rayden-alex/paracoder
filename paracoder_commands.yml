@@ -1,6 +1,12 @@
 defaults:
   # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.property-placeholders
+
   bitrate: "192"
+  # https://wiki.hydrogenaud.io/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
+  # The following function gives you a weight w for each cc, where cc is the channel configuration written as a decimal number (1.0 for mono, 2.0 for stereo, 5.1 for surround, etc.):
+  # w(cc) = cc^0.75
+  # For 5.1 multichannel audio equivalent bitrate is 192 * w(5.1)/w(2.0) = 192 * (5.1/2.0)^0.75 = 387 kbps (~384 kbps)
+
 
 pattern:
   fileExtensions:
@@ -10,6 +16,8 @@ pattern:
     - ape
     - dts
     - wv
+    - w64 
+    - aiff
 
   commandTemplate:
     flac: >-
