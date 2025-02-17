@@ -198,7 +198,7 @@ class ProcessRunnerTest {
     }
 
     /**
-     * Extracts program arguments from output like this:
+     * Extracts program arguments from ShowArgs.exe output like this:
      * <pre> {@code
      * argc: 3
      * argv[0]: >src\test\resources\ShowArgs.exe<
