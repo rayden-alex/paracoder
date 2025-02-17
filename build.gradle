@@ -1,15 +1,13 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.2.2'
-    id 'io.spring.dependency-management' version '1.1.4'
-    id 'me.qoomon.git-versioning' version '6.4.3'
+    id 'org.springframework.boot' version '3.4.2'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'me.qoomon.git-versioning' version '6.4.4'
 
     // Generating a git.properties file containing information about the state of your git source code repository when the project was built
     // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
     // https://github.com/n0mer/gradle-git-properties
-    id 'com.gorylenko.gradle-git-properties' version '2.4.1'
-
-    id 'org.graalvm.buildtools.native' version '0.10.1'
+    id 'com.gorylenko.gradle-git-properties' version '2.4.2'
 }
 
 group = 'by.rayden'
@@ -61,9 +59,13 @@ bootJar {
     // Locking the file name to avoid changing it every time in cmd-scripts
     archiveFileName = 'ParaCoder.jar'
 
+    // a script variable to capture the result of using project.ext to calculate the actual parameter
+    // https://docs.gradle.org/8.12.1/userguide/configuration_cache.html#config_cache:requirements:use_project_during_execution
+    def my_project_ext = project.ext
+
     manifest {
         // Filling the manifest attribute using the git property.
-        attributes('Build-Revision': "${-> project.ext.gitProps['git.commit.id.abbrev']}"  // Use GString lazy evaluation to delay until git properties are populated
+        attributes('Build-Revision': "${-> my_project_ext.gitProps['git.commit.id.abbrev']}" // Use GString lazy evaluation to delay until git properties are populated
         )
     }
 }
@@ -77,8 +79,8 @@ springBoot {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_23
+    targetCompatibility = JavaVersion.VERSION_23
 }
 
 configurations {
@@ -101,20 +103,22 @@ repositories {
 
 dependencies {
     // Next dependency is to get rid of "unknown enum constant javax.annotation.meta.When.MAYBE" warning
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.0'
-    compileOnly 'org.jetbrains:annotations:24.0.1'
+    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.4'
+    compileOnly 'org.jetbrains:annotations:26.0.1'
 
-    implementation 'net.java.dev.jna:jna:5.13.0'
+    implementation 'net.java.dev.jna:jna:5.15.0'
 
-    implementation 'info.picocli:picocli-spring-boot-starter:4.7.5'
-    implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
-    implementation 'commons-io:commons-io:2.11.0'
-    compileOnly 'org.projectlombok:lombok'
-    generateConfig 'info.picocli:picocli-codegen:4.7.5'
-    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'info.picocli:picocli-spring-boot-starter:4.7.6'
+//    implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
+    implementation 'org.fusesource.jansi:jansi:1.18'
+
+    implementation 'commons-io:commons-io:2.17.0'
+    compileOnly 'org.projectlombok:lombok:1.18.36'
+    generateConfig 'info.picocli:picocli-codegen:4.7.6'
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-    byteBuddyAgent 'net.bytebuddy:byte-buddy-agent'
+//    byteBuddyAgent 'net.bytebuddy:byte-buddy-agent'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -122,7 +126,7 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 
     //Enable JDK21 preview features, see https://docs.gradle.org/current/userguide/building_java_projects.html#sec:feature_preview
-    options.compilerArgs += "--enable-preview"
+//    options.compilerArgs += "--enable-preview"
 //    options.compilerArgs += "-Xlint:preview"
 
     // https://gist.github.com/rponte/d660919434d094bbd35a1aabf7ef1bf0
@@ -132,86 +136,33 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.withType(Test).configureEach {
-    jvmArgs += "--enable-preview"
+//    jvmArgs += "--enable-preview"
 
     // To get rid of "WARNING: A Java agent has been loaded dynamically ... byte-buddy-agent..."
     // https://github.com/raphw/byte-buddy/discussions/1535
-    jvmArgs += "-javaagent:${configurations.byteBuddyAgent.singleFile}"
+//    jvmArgs += "-javaagent:${configurations.byteBuddyAgent.singleFile}"
     defaultCharacterEncoding = "UTF-8"
 }
 
-tasks.withType(JavaExec).configureEach {
-    jvmArgs += "--enable-preview"
-}
+//tasks.withType(JavaExec).configureEach {
+//    jvmArgs += "--enable-preview"
+//}
 
 tasks.withType(Javadoc).configureEach {
     options.encoding = "UTF-8"
 }
 
 tasks.register('versionDebug') {
+    def my_project = project
     doLast {
-        println(project.version)
-        println(project.property("appExtProperty"))
-        println(project.property("git.commit"))
-        println(project.property("git.commit.timestamp.datetime"))
-        println(project.property("git.ref"))
+        println(my_project.version)
+        println(my_project.property("appExtProperty"))
+        println(my_project.property("git.commit"))
+        println(my_project.property("git.commit.timestamp.datetime"))
+        println(my_project.property("git.ref"))
     }
 }
 
 test {
     useJUnitPlatform()
 }
-
-graalvmNative {
-    agent {
-        defaultMode = "standard" // Default agent mode if one isn't specified using `-Pagent=mode_name`
-        enabled = true // Enables the agent
-
-        // Copies metadata collected from tasks into the specified directories.
-        metadataCopy {
-            inputTaskNames.add("bootRun") // Tasks previously executed with the agent attached.
-//            inputTaskNames.add("collectReachabilityMetadata") // Tasks previously executed with the agent attached.
-            outputDirectories.add("src/main/resources/META-INF/native-image") // Copies the metadata collected by the agent into the project sources
-            mergeWithExisting = true // Instead of copying, merge with existing metadata in the output directories.
-        }
-    }
-
-    binaries {
-        main {
-            // Main options
-            debug = false // Determines if debug info should be generated, defaults to false (alternatively add --debug-native to the CLI)
-            verbose = false // Add verbose output, defaults to false
-
-            // Advanced options
-            buildArgs.add('--enable-preview') // Passes '--enable-preview' to the native image builder options. This can be used to pass parameters which are not directly supported by this extension
-            buildArgs.add('-Dsun.native.encoding=UTF-8')
-
-            jvmArgs.add('--enable-preview') // Passes '--enable-preview' directly to the JVM running the native image builder
-            jvmArgs.add('-Dfile.encoding=UTF-8')
-            jvmArgs.add('-Dsun.native.encoding=UTF-8')
-            jvmArgs.add('-Dsun.stdout.encoding=UTF-8')
-            jvmArgs.add('-Dsun.stderr.encoding=UTF-8')
-
-        }
-    }
-}
-
-tasks.register('generateGraalReflectionConfig', JavaExec) {
-    enabled = false
-    dependsOn 'classes'
-    mainClass = 'picocli.codegen.aot.graalvm.ReflectionConfigGenerator'
-    classpath = configurations.generateConfig + sourceSets.main.runtimeClasspath
-    def outputFile = "${buildDir}/resources/main/META-INF/native-image/${project.group}/${project.name}/reflect-config.json"
-    args = ["--output=$outputFile", 'by.rayden.paracoder.cli.command.CommandController']
-}
-assemble.dependsOn generateGraalReflectionConfig
-
-tasks.register('generateGraalDynamicProxyConfig', JavaExec) {
-    enabled = false
-    dependsOn 'classes'
-    mainClass = 'picocli.codegen.aot.graalvm.DynamicProxyConfigGenerator'
-    classpath = configurations.generateConfig + sourceSets.main.runtimeClasspath
-    def outputFile = "${buildDir}/resources/main/META-INF/native-image/${project.group}/${project.name}/proxy-config.json"
-    args = ["--output=$outputFile", 'by.rayden.paracoder.cli.command.CommandController']
-}
-assemble.dependsOn generateGraalDynamicProxyConfig
