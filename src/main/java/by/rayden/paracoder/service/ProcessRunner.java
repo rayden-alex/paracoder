@@ -39,7 +39,7 @@ public class ProcessRunner {
     private int exec(String recodeCommand, Path sourceFilePath) {
         log.debug("Recode command: {}", recodeCommand);
         String threadName = Thread.currentThread().getName();
-        OutUtils.ansiOut(STR."Processing source file: @|yellow \{threadName}|@ @|blue \{sourceFilePath}|@");
+        OutUtils.ansiOut("Processing source file: @|yellow " + threadName + "|@ @|blue " + sourceFilePath + "|@");
 
         try {
             Process lastProcess = runProcessWithRedirect(recodeCommand);
@@ -49,7 +49,7 @@ public class ProcessRunner {
                 return lastProcess.exitValue();
             } else {
                 log.error("Waiting time for recode command has expired: {}", recodeCommand);
-                throw new RuntimeException(STR."Waiting time for recode command has expired: \{recodeCommand}");
+                throw new RuntimeException("Waiting time for recode command has expired: " + recodeCommand);
             }
         } catch (IOException | InterruptedException e) {
             log.error("Recode command error: {}", recodeCommand, e);

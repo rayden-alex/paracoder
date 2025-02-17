@@ -69,11 +69,11 @@ public class RecoderService {
             processDirs(pathMap);
 
             System.out.println();
-            OutUtils.ansiOut(STR."@|blue Max exit code: \{maxExitCode}|@");
+            OutUtils.ansiOut("@|blue Max exit code: " + maxExitCode + "|@");
             return maxExitCode;
         } catch (Exception e) {
             log.error("Recode error: {}", e.getMessage(), e);
-            OutUtils.ansiErr(STR."Error: @|red \{e.getMessage()}|@");
+            OutUtils.ansiErr("Error: @|red " + e.getMessage() + "|@");
             return CommandLine.ExitCode.SOFTWARE;
         }
     }
@@ -133,7 +133,7 @@ public class RecoderService {
         FileTime sourceFileTime = entry.getValue().lastModifiedTime();
 
         if (!sourceFilePath.toFile().exists()) {
-            OutUtils.ansiErr(STR."Can't process source file: @|red \{sourceFilePath}|@");
+            OutUtils.ansiErr("Can't process source file: @|red " + sourceFilePath + "|@");
             return CompletableFuture.completedFuture(CommandLine.ExitCode.SOFTWARE);
         }
 
@@ -153,7 +153,7 @@ public class RecoderService {
             if ((exitCode == CommandLine.ExitCode.OK) && this.paraCoderParams.preserveFileTimestamp()) {
                 File file = getTargetFile(command);
                 if (!setFileLastModifiedTime(file, sourceFileTime)) {
-                    throw new RuntimeException(STR."Error on setting timestamp to target file \{file}");
+                    throw new RuntimeException("Error on setting timestamp to target file " + file);
                 }
             }
             return exitCode;
@@ -173,10 +173,10 @@ public class RecoderService {
         return (exitCode, t) -> {
             if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
                 log.info("Completed OK {}", sourceFilePath);
-                OutUtils.ansiOut(STR."Completed: @|blue \{sourceFilePath}|@");
+                OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
             } else {
                 log.error("Error on processing source file: {}", sourceFilePath, t);
-                OutUtils.ansiErr(STR." @|red Error on processing source file: \{sourceFilePath}|@");
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + "|@");
             }
         };
     }
@@ -201,7 +201,7 @@ public class RecoderService {
             String targetFileName = matcher.group("targetFile");
             return Path.of(targetFileName).toFile();
         } else {
-            throw new RuntimeException(STR."Error on getting the target file from command \{fileCommand}");
+            throw new RuntimeException("Error on getting the target file from command " + fileCommand);
         }
     }
 
@@ -222,7 +222,7 @@ public class RecoderService {
         FileTime sourceDirTime = entry.getValue().lastModifiedTime();
 
         if (this.paraCoderParams.preserveDirTimestamp()) {
-            OutUtils.ansiOut(STR."Processing dir: @|cyan \{dirPath}|@");
+            OutUtils.ansiOut("Processing dir: @|cyan " + dirPath + "|@");
             setFileLastModifiedTime(dir, sourceDirTime);
             log.info("Completed dir OK {}", dirPath);
         }

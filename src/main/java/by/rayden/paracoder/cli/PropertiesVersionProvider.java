@@ -20,10 +20,10 @@ public class PropertiesVersionProvider implements IVersionProvider {
 
     public String[] getVersion() {
         return new String[]{
-            STR."\{this.buildInfo.getName()} @|bold,yellow v\{this.buildInfo.getVersion()}|@",
-            STR."Build-Date: @|yellow \{this.buildInfo.getTime()}|@",
-            STR."Build-Revision: @|yellow \{this.gitInfo.getShortCommitId()}|@",
-            STR."Revision-Date: @|yellow \{this.gitInfo.getCommitTime()}|@"
+            this.buildInfo.getName() + " @|bold,yellow v" + this.buildInfo.getVersion() + "|@",
+            "Build-Date: @|yellow " + this.buildInfo.getTime() + "|@",
+            "Build-Revision: @|yellow " + this.gitInfo.getShortCommitId() + "|@",
+            "Revision-Date: @|yellow " + this.gitInfo.getCommitTime() + "|@"
         };
     }
 }

@@ -59,7 +59,7 @@ public class OsNativeWindowsImpl implements OsNative {
 
         int ret = Shell32.INSTANCE.SHFileOperation(fileOp);
         if (ret != 0) {
-            throw new IOException(STR."Error on deleting source file to the trash: \{fileOp.pFrom}. ErrorCode=\{ret}");
+            throw new IOException("Error on deleting source file to the trash: " + fileOp.pFrom + ". ErrorCode=" + ret);
         }
         if (fileOp.fAnyOperationsAborted) {
             throw new IOException("Move to trash aborted");
