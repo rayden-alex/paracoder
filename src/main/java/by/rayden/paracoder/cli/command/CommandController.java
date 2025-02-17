@@ -2,7 +2,9 @@ package by.rayden.paracoder.cli.command;
 
 import by.rayden.paracoder.cli.PropertiesVersionProvider;
 import by.rayden.paracoder.service.RecoderService;
+import by.rayden.paracoder.utils.OutUtils;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -18,10 +20,12 @@ import java.util.concurrent.Callable;
 @Command(name = "paracoder",
     versionProvider = PropertiesVersionProvider.class,
     mixinStandardHelpOptions = true,
-    header = "ParaCoder CLI",
+    header = "",
     description = """
+        
+        ParaCoder CLI:
         This is a ParaCoder application
-        to recode lossless audio files to another format using multiple threads.""",
+        to recode lossless audio files to different format using multiple threads.""",
     parameterListHeading = "%nParameters:%n",
     optionListHeading    = "%nOptions:%n",
     showDefaultValues = true,
@@ -29,6 +33,7 @@ import java.util.concurrent.Callable;
     usageHelpWidth = 120,
     defaultValueProvider = CommandLine.PropertiesDefaultProvider.class,
     subcommands = Sub.class)
+@Slf4j
 public class CommandController implements Callable<Integer> {
     private final RecoderService recoderService;
 
@@ -79,6 +84,8 @@ public class CommandController implements Callable<Integer> {
 //            + System.getProperty("picocli.usage.width"));
 
         if (this.inputPathList == null || this.inputPathList.isEmpty()) {
+            log.error("No files or directories have been selected to recode");
+            OutUtils.ansiErr("Error: @|red No files or directories have been selected to recode|@");
             return CommandLine.ExitCode.USAGE;
         }
 
