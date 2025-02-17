@@ -65,7 +65,7 @@ public class RecoderService {
 
         try {
             Map<Path, BasicFileAttributes> pathMap = buildAbsolutePathTree();
-            Integer maxExitCode = asyncProcessFiles(pathMap);
+            int maxExitCode = asyncProcessFiles(pathMap);
             processDirs(pathMap);
 
             System.out.println();
@@ -90,7 +90,7 @@ public class RecoderService {
         return fileVisitor.getPathTree();
     }
 
-    private Integer asyncProcessFiles(Map<Path, BasicFileAttributes> pathMap) throws InterruptedException,
+    private int asyncProcessFiles(Map<Path, BasicFileAttributes> pathMap) throws InterruptedException,
         ExecutionException, TimeoutException {
 
         List<CompletableFuture<Integer>> futures = processFiles(pathMap);
