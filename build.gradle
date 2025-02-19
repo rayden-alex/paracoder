@@ -31,7 +31,6 @@ gitVersioning.apply {
     rev {
         version = "\${commit.short}"
     }
-//    updateGradleProperties = true
 }
 
 gitProperties {
@@ -87,9 +86,6 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
-
-//    byteBuddyAgent
-//    generateConfig
 }
 
 configurations.configureEach {
@@ -102,19 +98,15 @@ repositories {
 }
 
 dependencies {
-    // Next dependency is to get rid of "unknown enum constant javax.annotation.meta.When.MAYBE" warning
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.4'
     compileOnly 'org.jetbrains:annotations:26.0.1'
 
     implementation 'net.java.dev.jna:jna:5.15.0'
 
     implementation 'info.picocli:picocli-spring-boot-starter:4.7.6'
-//    implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
     implementation 'org.fusesource.jansi:jansi:1.18'
 
     implementation 'commons-io:commons-io:2.17.0'
     compileOnly 'org.projectlombok:lombok:1.18.36'
-//    generateConfig 'info.picocli:picocli-codegen:4.7.6'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
@@ -123,10 +115,6 @@ tasks.withType(JavaCompile).configureEach {
     // Specifies options to pass to picocli annotation processor (-Akey[=value]).
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 
-    //Enable JDK21 preview features, see https://docs.gradle.org/current/userguide/building_java_projects.html#sec:feature_preview
-//    options.compilerArgs += "--enable-preview"
-//    options.compilerArgs += "-Xlint:preview"
-
     // https://gist.github.com/rponte/d660919434d094bbd35a1aabf7ef1bf0
     // Although Spring Boot Gradle Plugin configures any JavaCompile tasks with no configured encoding to use UTF-8.
     // https://docs.spring.io/spring-boot/docs/3.2.2/gradle-plugin/reference/htmlsingle/#reacting-to-other-plugins.java
@@ -134,17 +122,8 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.withType(Test).configureEach {
-//    jvmArgs += "--enable-preview"
-
-    // To get rid of "WARNING: A Java agent has been loaded dynamically ... byte-buddy-agent..."
-    // https://github.com/raphw/byte-buddy/discussions/1535
-//    jvmArgs += "-javaagent:${configurations.byteBuddyAgent.singleFile}"
     defaultCharacterEncoding = "UTF-8"
 }
-
-//tasks.withType(JavaExec).configureEach {
-//    jvmArgs += "--enable-preview"
-//}
 
 tasks.withType(Javadoc).configureEach {
     options.encoding = "UTF-8"
