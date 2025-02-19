@@ -71,7 +71,7 @@ public class CommandController implements Callable<Integer> {
     }
 
     public List<Path> getInputPathList() {
-        return Collections.unmodifiableList(this.inputPathList);
+        return this.inputPathList == null ? Collections.emptyList() : Collections.unmodifiableList(this.inputPathList);
     }
 
     @Override
