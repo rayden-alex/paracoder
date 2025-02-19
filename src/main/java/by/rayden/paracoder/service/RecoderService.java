@@ -63,6 +63,10 @@ public class RecoderService {
     public int recode(CommandController.Params paraCoderParams) {
         this.paraCoderParams = paraCoderParams;
 
+        if (!validateParams()) {
+            return CommandLine.ExitCode.USAGE;
+        }
+
         try {
             Map<Path, BasicFileAttributes> pathMap = buildAbsolutePathTree();
             int maxExitCode = asyncProcessFiles(pathMap);
@@ -76,6 +80,18 @@ public class RecoderService {
             OutUtils.ansiErr("Error: @|red " + e.getMessage() + "|@");
             return CommandLine.ExitCode.SOFTWARE;
         }
+    }
+
+    private boolean validateParams() {
+        boolean valid = true;
+
+        if (this.paraCoderParams.inputPathList().isEmpty()) {
+            log.error("No files or directories have been selected to recode");
+            OutUtils.ansiErr("Error: @|red No files or directories have been selected to recode|@");
+            valid = false;
+        }
+
+        return valid;
     }
 
     private Map<Path, BasicFileAttributes> buildAbsolutePathTree() throws IOException {
