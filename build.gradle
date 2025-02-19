@@ -89,7 +89,7 @@ configurations {
     }
 
 //    byteBuddyAgent
-    generateConfig
+//    generateConfig
 }
 
 configurations.configureEach {
@@ -114,11 +114,9 @@ dependencies {
 
     implementation 'commons-io:commons-io:2.17.0'
     compileOnly 'org.projectlombok:lombok:1.18.36'
-    generateConfig 'info.picocli:picocli-codegen:4.7.6'
+//    generateConfig 'info.picocli:picocli-codegen:4.7.6'
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-
-//    byteBuddyAgent 'net.bytebuddy:byte-buddy-agent'
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -165,4 +163,10 @@ tasks.register('versionDebug') {
 
 test {
     useJUnitPlatform()
+
+    // to suppress WARNING like this:
+    // "A Java agent has been loaded dynamically...  byte-buddy-agent...",
+    // "OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes
+    // because bootstrap classpath has been appended"
+    jvmArgs(['-XX:+EnableDynamicAgentLoading', '-Xshare:off'])
 }
