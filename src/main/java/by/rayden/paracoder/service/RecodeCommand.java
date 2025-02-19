@@ -18,8 +18,8 @@ public class RecodeCommand {
 
     @NonNull
     public String getCommand(Path filePath) {
-        String extension = FilenameUtils.getExtension(filePath.getFileName().toString().toLowerCase());
-        String commandTemplate = getCommandTemplate(extension);
+        String extension = FilenameUtils.getExtension(filePath.getFileName().toString());
+        String commandTemplate = getCommandTemplate(extension.toLowerCase());
 
         return makeCommandFromTemplate(commandTemplate, filePath.toString());
     }

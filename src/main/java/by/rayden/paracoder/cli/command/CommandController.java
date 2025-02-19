@@ -19,11 +19,7 @@ import java.util.concurrent.Callable;
     versionProvider = PropertiesVersionProvider.class,
     mixinStandardHelpOptions = true,
     header = "",
-    description = """
-        
-        ParaCoder CLI:
-        This is a ParaCoder application
-        to recode lossless audio files to different format using multiple threads.""",
+    description = CommandController.APP_DESCRIPTION,
     parameterListHeading = "%nParameters:%n",
     optionListHeading    = "%nOptions:%n",
     showDefaultValues = true,
@@ -32,6 +28,12 @@ import java.util.concurrent.Callable;
     defaultValueProvider = CommandLine.PropertiesDefaultProvider.class,
     subcommands = Sub.class)
 public class CommandController implements Callable<Integer> {
+    static final String APP_DESCRIPTION = """
+        
+        ParaCoder CLI:
+        This is a ParaCoder application
+        to recode lossless audio files to different format using multiple threads.""";
+
     private final RecoderService recoderService;
 
     @Option(names = {"-pf", "--preserve-file-timestamp"},
