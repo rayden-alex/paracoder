@@ -6,7 +6,7 @@ rem This is not mandatory since a valid working dir set in the shortcut (.lnk) t
 rem pushd %~dp0
 rem echo %CD%
 
-java -XX:AOTCache=paracoder.aot --enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -jar d:\java\prj\paracoder\build\libs\ParaCoder.jar --recurse -d --thread-count=5 %*
+java -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -jar d:\java\prj\paracoder\build\libs\ParaCoder.jar --recurse -d --thread-count=5 %*
 
 echo ERRORLEVEL:%ERRORLEVEL%
 
