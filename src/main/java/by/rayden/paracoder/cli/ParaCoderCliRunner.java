@@ -2,6 +2,7 @@ package by.rayden.paracoder.cli;
 
 import by.rayden.paracoder.cli.command.CommandController;
 import lombok.extern.slf4j.Slf4j;
+import org.fusesource.jansi.AnsiConsole;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.stereotype.Component;
@@ -67,8 +68,10 @@ public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator 
         ParaCoderCliRunner.createShutdownHook();
 
         try {
+            AnsiConsole.systemInstall();
             this.exitCode = new CommandLine(this.commandController, this.cliFactory).execute(unicodeArgs);
         } finally {
+            AnsiConsole.systemUninstall();
             log.info("ParaCoder completed.");
         }
     }
