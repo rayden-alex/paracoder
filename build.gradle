@@ -65,8 +65,8 @@ bootJar {
 
     manifest {
         // Filling the manifest attribute using the git property.
-        attributes('Build-Revision': "${-> my_project_ext.gitProps['git.commit.id.abbrev']}" // Use GString lazy evaluation to delay until git properties are populated
-        )
+        attributes 'Build-Revision': "${-> my_project_ext.gitProps['git.commit.id.abbrev']}" // Use GString lazy evaluation to delay until git properties are populated
+        attributes 'Enable-Native-Access': 'ALL-UNNAMED'
     }
 }
 
