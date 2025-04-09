@@ -1,13 +1,14 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.3'
+    id 'org.springframework.boot' version '3.4.4'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'io.freefair.lombok' version '8.13.1'
     id 'me.qoomon.git-versioning' version '6.4.4'
 
     // Generating a git.properties file containing information about the state of your git source code repository when the project was built
     // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
     // https://github.com/n0mer/gradle-git-properties
-    id 'com.gorylenko.gradle-git-properties' version '2.4.2'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.0'
 }
 
 group = 'by.rayden'
@@ -78,15 +79,11 @@ springBoot {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_23
-    targetCompatibility = JavaVersion.VERSION_23
-}
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(24)
     }
 }
+
 
 configurations.configureEach {
 //	https://gradlehero.com/how-to-exclude-gradle-dependencies/
@@ -98,23 +95,23 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.jetbrains:annotations:26.0.1'
+    compileOnly 'org.jetbrains:annotations:26.0.2'
 
-    implementation 'net.java.dev.jna:jna:5.15.0'
+    implementation 'net.java.dev.jna:jna:5.17.0'
 
     implementation 'info.picocli:picocli-spring-boot-starter:4.7.6'
-    implementation 'org.fusesource.jansi:jansi:1.18'
+    implementation 'org.fusesource.jansi:jansi:2.4.0'
 
     implementation 'commons-io:commons-io:2.17.0'
-    compileOnly 'org.projectlombok:lombok:1.18.36'
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito:mockito-core:5.17.0'
+}
+
+lombok {
+    version = '1.18.38'
 }
 
 tasks.withType(JavaCompile).configureEach {
-    // Specifies options to pass to picocli annotation processor (-Akey[=value]).
-    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
-
     // https://gist.github.com/rponte/d660919434d094bbd35a1aabf7ef1bf0
     // Although Spring Boot Gradle Plugin configures any JavaCompile tasks with no configured encoding to use UTF-8.
     // https://docs.spring.io/spring-boot/docs/3.2.2/gradle-plugin/reference/htmlsingle/#reacting-to-other-plugins.java
@@ -147,5 +144,5 @@ test {
     // "A Java agent has been loaded dynamically...  byte-buddy-agent...",
     // "OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes
     // because bootstrap classpath has been appended"
-    jvmArgs(['-XX:+EnableDynamicAgentLoading', '-Xshare:off'])
+    jvmArgs(['--enable-native-access=ALL-UNNAMED', '-XX:+EnableDynamicAgentLoading', '-Xshare:off'])
 }
