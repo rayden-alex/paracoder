@@ -1,9 +1,9 @@
 package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
@@ -23,7 +23,8 @@ class RecoderServiceTest {
     }
 
     @Test
-    void removeFileToTrash() throws IOException {
+    @SneakyThrows
+    void removeFileToTrash() {
         Path path = Files.createTempFile("paracoder", "test.tmp");
         assertThat(path.toFile()).exists();
 

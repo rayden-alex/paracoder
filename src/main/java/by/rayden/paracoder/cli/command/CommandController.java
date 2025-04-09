@@ -23,10 +23,9 @@ import java.util.concurrent.Callable;
     parameterListHeading = "%nParameters:%n",
     optionListHeading    = "%nOptions:%n",
     showDefaultValues = true,
-    usageHelpAutoWidth = false,
     usageHelpWidth = 120,
-    defaultValueProvider = CommandLine.PropertiesDefaultProvider.class,
-    subcommands = Sub.class)
+    defaultValueProvider = CommandLine.PropertiesDefaultProvider.class
+)
 public class CommandController implements Callable<Integer> {
     static final String APP_DESCRIPTION = """
         

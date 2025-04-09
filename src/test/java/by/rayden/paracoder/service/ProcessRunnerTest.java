@@ -2,11 +2,9 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -18,8 +16,6 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-// TODO: Finish tests
-@ExtendWith(MockitoExtension.class)
 class ProcessRunnerTest {
 
     private static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
@@ -34,6 +30,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
         assertThat(res.out).isNotEmpty();
 
@@ -51,6 +48,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).as("Command error stream:").isEmpty();
         assertThat(res.out).isNotEmpty();
 
@@ -69,6 +67,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
         assertThat(res.out).isNotEmpty();
 
@@ -89,6 +88,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
         assertThat(res.out).isNotEmpty();
     }
@@ -98,12 +98,13 @@ class ProcessRunnerTest {
         List<String> commands = List.of(
             "cmd.exe",
             "/c",
-            "waitfor.exe /T 3 qqqqqqq");
+            "chcp 65001>nul && waitfor.exe /T 1 qqqqqqq");
 
         ProcessResult res = execCapturedProcess(commands);
 
-        assertThat(res.err).isNotEmpty();
+        assertThat(res.exitCode).isNotZero();
         assertThat(res.out).isEmpty();
+        assertThat(res.err).isEqualTo("ERROR: Timed out waiting for 'qqqqqqq'.\r\n");
     }
 
     @Test
@@ -115,6 +116,7 @@ class ProcessRunnerTest {
         Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 p2");
         ProcessResult res = execCapturedProcess(process);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
 
         List<String> args = getArgs(res.out);
@@ -134,6 +136,7 @@ class ProcessRunnerTest {
             .runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \"p2 3\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
 
         List<String> args = getArgs(res.out);
@@ -154,6 +157,7 @@ class ProcessRunnerTest {
             + unicodeFileName + "\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
 
         List<String> args = getArgs(res.out);
@@ -189,12 +193,9 @@ class ProcessRunnerTest {
         return new ProcessResult(exitCode, outStr, errorStr);
     }
 
+    @SneakyThrows
     private String readToString(InputStream stream) {
-        try {
-            return new String(stream.readAllBytes(), PROCESS_CHARSET);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return new String(stream.readAllBytes(), PROCESS_CHARSET);
     }
 
     /**
@@ -207,6 +208,10 @@ class ProcessRunnerTest {
      * }</pre>
      */
     private List<String> getArgs(String output) {
-        return SHOW_ARGS_REGEX.matcher(output).results().map(matchResult -> matchResult.group(1)).toList();
+        return SHOW_ARGS_REGEX
+            .matcher(output)
+            .results()
+            .map(matchResult -> matchResult.group(1))
+            .toList();
     }
 }
