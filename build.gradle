@@ -1,14 +1,14 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.4'
+    id 'org.springframework.boot' version '3.5.4'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'io.freefair.lombok' version '8.13.1'
+    id 'io.freefair.lombok' version '8.14'
     id 'me.qoomon.git-versioning' version '6.4.4'
 
     // Generating a git.properties file containing information about the state of your git source code repository when the project was built
     // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
     // https://github.com/n0mer/gradle-git-properties
-    id 'com.gorylenko.gradle-git-properties' version '2.5.0'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.2'
 }
 
 group = 'by.rayden'
@@ -94,17 +94,24 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    mockitoAgent
+}
+
 dependencies {
     compileOnly 'org.jetbrains:annotations:26.0.2'
 
     implementation 'net.java.dev.jna:jna:5.17.0'
 
-    implementation 'info.picocli:picocli-spring-boot-starter:4.7.6'
-    implementation 'org.fusesource.jansi:jansi:2.4.0'
+    implementation 'info.picocli:picocli-spring-boot-starter:4.7.7'
+    implementation 'org.fusesource.jansi:jansi:2.4.2'
 
-    implementation 'commons-io:commons-io:2.17.0'
+    implementation 'commons-io:commons-io:2.20.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.mockito:mockito-core:5.17.0'
+    testImplementation 'org.mockito:mockito-core:5.18.0'
+    mockitoAgent('org.mockito:mockito-core:5.18.0') {
+        transitive = false
+    }
 }
 
 lombok {
@@ -144,5 +151,7 @@ test {
     // "A Java agent has been loaded dynamically...  byte-buddy-agent...",
     // "OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes
     // because bootstrap classpath has been appended"
-    jvmArgs(['--enable-native-access=ALL-UNNAMED', '-XX:+EnableDynamicAgentLoading', '-Xshare:off'])
+    jvmArgs += '--enable-native-access=ALL-UNNAMED'
+    jvmArgs += '-Xshare:off'
+    jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
 }
