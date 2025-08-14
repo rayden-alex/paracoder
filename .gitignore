@@ -13,4 +13,6 @@ log/
 /paracoder.aotconf
 
 # Other
+/doc
 /paracoder_native.cmd
+/*.jar_
