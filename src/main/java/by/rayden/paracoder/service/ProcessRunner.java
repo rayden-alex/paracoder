@@ -6,7 +6,6 @@ import com.sun.jna.WString;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -78,7 +77,6 @@ public class ProcessRunner {
     /**
      * A recodeCommand can have just one command/process to run as well.
      */
-    @NonNull
     private List<ProcessBuilder> makeProcessBuilders(String recodeCommand) {
         return Arrays.stream(recodeCommand.split("\\|"))
                      .map(String::trim)
