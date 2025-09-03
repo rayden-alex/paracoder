@@ -36,8 +36,7 @@ import java.util.regex.Pattern;
 public class RecoderService {
     public static final Comparator<Path> REVERSED_PATH_COMPARATOR = Comparator
         .comparingInt(Path::getNameCount)
-        .reversed()
-        .thenComparing(Comparator.naturalOrder());
+        .reversed();
 
     // https://javascript.info/regexp-greedy-and-lazy#alternative-approach
     public static final Pattern LAST_QUOTED_STRING_PATTERN = Pattern.compile("\"(?<targetFile>[^\"]+?)\"$");
