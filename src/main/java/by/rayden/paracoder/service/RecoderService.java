@@ -6,21 +6,32 @@ import by.rayden.paracoder.utils.OutUtils;
 import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
+import org.digitalmediaserver.cuelib.CueParser;
+import org.digitalmediaserver.cuelib.CueSheet;
+import org.digitalmediaserver.cuelib.FileData;
+import org.digitalmediaserver.cuelib.Position;
+import org.digitalmediaserver.cuelib.TrackData;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
+import java.time.LocalTime;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -30,6 +41,8 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+
+import static org.digitalmediaserver.cuelib.CueSheet.MetaDataField;
 
 @Service
 @Slf4j
@@ -128,6 +141,7 @@ public class RecoderService {
                       .filter(entry -> entry.getValue().isRegularFile())
                       .sorted(Map.Entry.comparingByKey())
                       .map(this::processFile)
+                      .flatMap(Collection::stream)
                       .toList();
     }
 
@@ -142,56 +156,137 @@ public class RecoderService {
                .forEach(this::processDir);
     }
 
+    /**
+     * When processing one "CUE" file, several output files may be generated.
+     * <p>That's why the result of the method is a List.
+     */
     @SneakyThrows
-    private CompletableFuture<Integer> processFile(Map.Entry<Path, BasicFileAttributes> entry) {
-        Path sourceFilePath = entry.getKey();
+    private List<CompletableFuture<Integer>> processFile(Map.Entry<Path, BasicFileAttributes> entry) {
+        File sourceFile = entry.getKey().toFile();
         FileTime sourceFileTime = entry.getValue().lastModifiedTime();
 
-        if (!sourceFilePath.toFile().exists()) {
-            OutUtils.ansiErr("Can't process source file: @|red " + sourceFilePath + "|@");
-            return CompletableFuture.completedFuture(CommandLine.ExitCode.SOFTWARE);
+        if (!sourceFile.exists()) {
+            OutUtils.ansiErr("Source file doesn't exists: @|red " + sourceFile + "|@");
+            return Collections.singletonList(CompletableFuture.completedFuture(CommandLine.ExitCode.SOFTWARE));
         }
 
-        String command = this.recodeCommand.getCommand(sourceFilePath);
-
-        return this.processRunner
-                   .execCommandAsync(command, sourceFilePath)
-                   .orTimeout(10, TimeUnit.MINUTES) //??
-                   .thenApply(preserveTimestampAction(command, sourceFileTime))
-                   .thenApply(removeToTrashAction(sourceFilePath))
-                   .whenComplete(oneFileProcessCompleteAction(sourceFilePath))
-                   .handle(oneFileProcessResultAction());
+        String extension = FilenameUtils.getExtension(sourceFile.toString());
+        if ("cue".equalsIgnoreCase(extension)) {
+            return createFuturesForCueFile(sourceFile, sourceFileTime);
+        } else {
+            return Collections.singletonList(createFutureForOrdinalFile(sourceFile, sourceFileTime));
+        }
     }
 
-    private Function<Integer, Integer> preserveTimestampAction(String command, FileTime sourceFileTime) {
+    private List<CompletableFuture<Integer>> createFuturesForCueFile(File sourceFile, FileTime sourceFileTime) {
+        try {
+            CueSheet cue = CueParser.parse(sourceFile.toPath(), StandardCharsets.UTF_8);
+
+            return cue.getFileData().stream()
+                      .map(FileData::getTrackData)
+                      .flatMap(Collection::stream)
+                      .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // todo
+                      .map(trackData -> getCueTrackPayload(trackData, sourceFile, sourceFileTime))
+                      .map(this::createFutureForCueTrack)
+                      .toList();
+        } catch (Exception e) {
+            return Collections.singletonList(CompletableFuture.failedFuture(e));
+        }
+    }
+
+    private CompletableFuture<Integer> createFutureForOrdinalFile(File sourceFile, FileTime sourceFileTime) {
+        String command = this.recodeCommand.getCommand(sourceFile);
+        File targetFile = getTargetFile(command);
+
+        return this.processRunner
+            .execCommandAsync(command, sourceFile)
+            .orTimeout(10, TimeUnit.MINUTES) //??
+            .thenApply(preserveTimestampAction(targetFile, sourceFileTime))
+            .thenApply(removeToTrashAction(sourceFile))
+            .whenComplete(oneFileProcessCompleteAction(sourceFile))
+            .handle(oneFileProcessResultAction());
+    }
+
+    @SuppressWarnings("MagicNumber")
+    private CueTrackPayload getCueTrackPayload(TrackData trackData, File sourceFile, FileTime sourceFileTime) {
+        LocalTime startTime = convertToTime(trackData.getFirstIndex().getPosition());
+
+        LocalTime endTime;
+        if (trackData == trackData.getParent().getTrackData().getLast()) {
+            endTime = LocalTime.of(23, 59, 59); // to the end of file
+        } else {
+            TrackData nextTrackData = trackData.getParent().getTrackData().get(trackData.getNumber());
+            endTime = convertToTime(nextTrackData.getFirstIndex().getPosition());
+        }
+
+        return CueTrackPayload
+            .builder()
+            // It is assumed that the Audio file is located next to the source CUE file.
+            .audioFilePath(sourceFile.toPath().resolveSibling(trackData.getParent().getFile()))
+            .title(trackData.getMetaData(MetaDataField.TITLE))
+            .songNumber(trackData.getNumber())
+            .startTime(startTime)
+            .endTime(endTime)
+            .sourceFile(sourceFile)
+            .sourceFileTime(sourceFileTime)
+            .build();
+    }
+
+    private LocalTime convertToTime(@Nullable Position position) {
+        Objects.requireNonNull(position);
+
+        final int SECONDS_PER_MINUTE = 60;
+        final long NANOS_PER_SECOND = 1000_000_000L;
+        final long NANOS_PER_MINUTE = NANOS_PER_SECOND * SECONDS_PER_MINUTE;
+
+        // CD Audio (Red Book) has 75 frames per second
+        final int FRAMES_PER_SECOND = 75;
+        final long NANOS_PER_FRAME = NANOS_PER_SECOND / FRAMES_PER_SECOND;
+
+        return LocalTime.ofNanoOfDay(position.getMinutes() * NANOS_PER_MINUTE
+            + position.getSeconds() * NANOS_PER_SECOND
+            + position.getFrames() * NANOS_PER_FRAME);
+    }
+
+    private CompletableFuture<Integer> createFutureForCueTrack(CueTrackPayload trackPayload) {
+        String command = this.recodeCommand.getCommand(trackPayload);
+        File targetFile = getTargetFile(command);
+
+        return this.processRunner.execCommandAsync(command, trackPayload.getSourceFile())
+                                 .orTimeout(10, TimeUnit.MINUTES) //TODO
+                                 .thenApply(preserveTimestampAction(targetFile, trackPayload.getSourceFileTime()))
+                                 .whenComplete(oneFileProcessCompleteAction(targetFile)) // TODO:
+                                 .handle(oneFileProcessResultAction());
+    }
+
+    private Function<Integer, Integer> preserveTimestampAction(File targetFile, FileTime sourceFileTime) {
         return exitCode -> {
             if ((exitCode == CommandLine.ExitCode.OK) && this.paraCoderParams.preserveFileTimestamp()) {
-                File file = getTargetFile(command);
-                if (!setFileLastModifiedTime(file, sourceFileTime)) {
-                    throw new RuntimeException("Error on setting timestamp to target file " + file);
+                if (!setFileLastModifiedTime(targetFile, sourceFileTime)) {
+                    throw new RuntimeException("Error on setting timestamp to target targetFile " + targetFile);
                 }
             }
             return exitCode;
         };
     }
 
-    private Function<Integer, Integer> removeToTrashAction(Path sourceFilePath) {
+    private Function<Integer, Integer> removeToTrashAction(File sourceFile) {
         return exitCode -> {
             if ((exitCode == CommandLine.ExitCode.OK) && this.paraCoderParams.deleteSourceFilesToTrash()) {
-                deleteFileToTrash(sourceFilePath);
+                deleteFileToTrash(sourceFile);
             }
             return exitCode;
         };
     }
 
-    private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
+    private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(File sourceFile) {
         return (exitCode, t) -> {
             if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
-                log.info("Completed OK {}", sourceFilePath);
-                OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
+                log.info("Completed OK {}", sourceFile);
+                OutUtils.ansiOut("Completed: @|blue " + sourceFile + "|@");
             } else {
-                log.error("Error on processing source file: {}", sourceFilePath, t);
-                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + "|@");
+                log.error("Error on processing source file: {}", sourceFile, t);
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFile + "|@");
             }
         };
     }
@@ -244,8 +339,8 @@ public class RecoderService {
     }
 
     @SneakyThrows
-    private void deleteFileToTrash(Path path) {
-        this.osNative.deleteToTrash(path.toFile());
+    private void deleteFileToTrash(File file) {
+        this.osNative.deleteToTrash(file);
     }
 
 }

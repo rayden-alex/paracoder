@@ -8,8 +8,8 @@ import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -26,8 +26,8 @@ public class ProcessRunner {
         this.osNative = osNative;
     }
 
-    public CompletableFuture<Integer> execCommandAsync(String recodeCommand, Path sourceFilePath) {
-        return CompletableFuture.supplyAsync(() -> exec(recodeCommand, sourceFilePath), this.pool.getExecutor());
+    public CompletableFuture<Integer> execCommandAsync(String recodeCommand, File sourceFile) {
+        return CompletableFuture.supplyAsync(() -> exec(recodeCommand, sourceFile), this.pool.getExecutor());
     }
 
     // TODO 2024-02-07: Add process output redirect (configurable by CLI option) to a file.
@@ -35,10 +35,10 @@ public class ProcessRunner {
     //  A file name should have a thread name to not mix output from different threads.
 
     // TODO 2024-02-07: Extract ProcessBuilder as class dependency for flexible testing.
-    private int exec(String recodeCommand, Path sourceFilePath) {
+    private int exec(String recodeCommand, File sourceFile) {
         log.debug("Recode command: {}", recodeCommand);
         String threadName = Thread.currentThread().getName();
-        OutUtils.ansiOut("Processing source file: @|yellow " + threadName + "|@ @|blue " + sourceFilePath + "|@");
+        OutUtils.ansiOut("Processing: @|yellow " + threadName + "|@ @|blue " + sourceFile + "|@");
 
         try {
             Process lastProcess = runProcessWithRedirect(recodeCommand);

@@ -11,18 +11,27 @@ defaults:
 pattern:
   fileExtensions:
     - flac
-#    - m4a
+    - m4a
     - wav
     - ape
     - dts
     - wv
     - w64 
     - aiff
+    - cue
+
 
   commandTemplate:
     flac: >-
       "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
     wav: >-
       "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
+    
+    cue: >-
+      "c:\Rip\ffmpeg\bin\ffmpeg.exe" -hide_banner -loglevel error -nostats -nostdin -i "{{F}}" -c:v copy -c:a copy -ss {{ST}} -to {{ET}} "{{D}}{{P}}{{NUM}}. {{TITLE}}.opus"
+
     any: >-
       "c:\Rip\ffmpeg\bin\ffmpeg.exe" -hide_banner -loglevel error -nostats -nostdin -i "{{F}}" -c:v copy -c:a flac -f flac - | "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+
+
+#   flac -e -f --skip=00:00,00 --until 02:08,266 --no-seektable "Inner Shrine - Nocturnal Rhymes Entangled in Silence.flac" -o - | opusenc.exe --music --vbr --bitrate 192 - 777.opus
