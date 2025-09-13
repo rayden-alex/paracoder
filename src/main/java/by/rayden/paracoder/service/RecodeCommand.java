@@ -9,9 +9,25 @@ import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collector;
 
 @Service
 public class RecodeCommand {
+    /**
+     * Map to replace invalid characters in file name to HomoGlyphs
+     */
+    private static final Map<Character, Character> SANITIZE_FILENAME_MAP = Map.of(
+        '/', '╱',
+        '\\', '﹨',
+        '|', '￨',
+        '?', '？',
+        ':', '∶',
+        '*', '∗',
+        '<', '˂',
+        '>', '˃'
+    );
+
+    private static final DateTimeFormatter FFMPEG_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private final PatternProperties patternProperties;
 
     public RecodeCommand(PatternProperties patternProperties) {
@@ -26,9 +42,10 @@ public class RecodeCommand {
     }
 
     public String getCommand(CueTrackPayload cueTrackPayload) {
-        String commandTemplate = getCommandTemplate("cue");
+        String audioFileExt = FilenameUtils.getExtension(cueTrackPayload.getAudioFilePath().toString());
+        String commandTemplate = getCommandTemplate("cue_" + audioFileExt.toLowerCase());
 
-        return makeCueCommandFromTemplate(commandTemplate, cueTrackPayload);
+        return makeCommandFromTemplate(commandTemplate, cueTrackPayload);
     }
 
     private String getCommandTemplate(String extension) {
@@ -44,16 +61,27 @@ public class RecodeCommand {
                               .replace("{{N}}", FilenameUtils.getBaseName(filePath));
     }
 
-    private String makeCueCommandFromTemplate(String commandTemplate, CueTrackPayload trackPayload) {
-        String filePath = Objects.requireNonNull(trackPayload.getAudioFilePath()).toString();
-        final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    private String makeCommandFromTemplate(String commandTemplate, CueTrackPayload trackPayload) {
+        String filePath = trackPayload.getAudioFilePath().toString();
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
         return makeCommandFromTemplate(commandTemplate, filePath)
-            .replace("{{ST}}", Objects.requireNonNull(trackPayload.getStartTime()).format(timeFormatter)) //TODO
-            .replace("{{ET}}", Objects.requireNonNull(trackPayload.getEndTime()).format(timeFormatter)) //TODO
-            .replace("{{NUM}}", numberFormater.format(trackPayload.getSongNumber()))
-            .replace("{{TITLE}}", Objects.requireNonNull(trackPayload.getTitle()));
-
+            .replace("{{CUE_ST}}", trackPayload.getStartTime().format(FFMPEG_TIME_FORMATTER))
+            .replace("{{CUE_ET}}", trackPayload.getEndTime().format(FFMPEG_TIME_FORMATTER))
+            .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.getSongNumber()))
+            .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getTitle())));
     }
+
+    private String sanitizeFileName(String name) {
+        return name.chars()
+                   .mapToObj(i -> (char) i)
+                   .map(c -> SANITIZE_FILENAME_MAP.getOrDefault(c, c))
+                   // .filter(c -> Character.isLetterOrDigit(c) || c == '-' || c == '_')
+                   .collect(Collector.of(
+                       StringBuilder::new,
+                       StringBuilder::append,
+                       StringBuilder::append,
+                       StringBuilder::toString));
+    }
+
 }

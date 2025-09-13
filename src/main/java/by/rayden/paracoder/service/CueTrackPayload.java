@@ -14,20 +14,17 @@ import java.time.LocalTime;
 public class CueTrackPayload {
     private int songNumber;
 
-    @Nullable
     private Path audioFilePath;
 
     @Nullable
     private String title;
 
-    @Nullable
     private LocalTime startTime;
 
-    @Nullable
     private LocalTime endTime;
 
     private File sourceFile;
 
-    private FileTime sourceFileTime;
+    private FileTime audioFileTime;
 
 }

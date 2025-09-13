@@ -53,6 +53,7 @@ public class RecoderService {
 
     // https://javascript.info/regexp-greedy-and-lazy#alternative-approach
     public static final Pattern LAST_QUOTED_STRING_PATTERN = Pattern.compile("\"(?<targetFile>[^\"]+?)\"$");
+    private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
 
     private final PatternProperties patternProperties;
     private final ProcessRunner processRunner;
@@ -172,13 +173,13 @@ public class RecoderService {
 
         String extension = FilenameUtils.getExtension(sourceFile.toString());
         if ("cue".equalsIgnoreCase(extension)) {
-            return createFuturesForCueFile(sourceFile, sourceFileTime);
+            return createFuturesForCueFile(sourceFile);
         } else {
             return Collections.singletonList(createFutureForOrdinalFile(sourceFile, sourceFileTime));
         }
     }
 
-    private List<CompletableFuture<Integer>> createFuturesForCueFile(File sourceFile, FileTime sourceFileTime) {
+    private List<CompletableFuture<Integer>> createFuturesForCueFile(File sourceFile) {
         try {
             CueSheet cue = CueParser.parse(sourceFile.toPath(), StandardCharsets.UTF_8);
 
@@ -186,7 +187,7 @@ public class RecoderService {
                       .map(FileData::getTrackData)
                       .flatMap(Collection::stream)
                       .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // todo
-                      .map(trackData -> getCueTrackPayload(trackData, sourceFile, sourceFileTime))
+                      .map(trackData -> getCueTrackPayload(trackData, sourceFile))
                       .map(this::createFutureForCueTrack)
                       .toList();
         } catch (Exception e) {
@@ -207,28 +208,31 @@ public class RecoderService {
             .handle(oneFileProcessResultAction());
     }
 
-    @SuppressWarnings("MagicNumber")
-    private CueTrackPayload getCueTrackPayload(TrackData trackData, File sourceFile, FileTime sourceFileTime) {
-        LocalTime startTime = convertToTime(trackData.getFirstIndex().getPosition());
+    @SneakyThrows
+    private CueTrackPayload getCueTrackPayload(TrackData trackData, File sourceFile) {
+        LocalTime trackStartTime = convertToTime(trackData.getFirstIndex().getPosition());
 
-        LocalTime endTime;
+        LocalTime trackEndTime;
         if (trackData == trackData.getParent().getTrackData().getLast()) {
-            endTime = LocalTime.of(23, 59, 59); // to the end of file
+            trackEndTime = END_OF_FILE_TIME; // to the end of file
         } else {
             TrackData nextTrackData = trackData.getParent().getTrackData().get(trackData.getNumber());
-            endTime = convertToTime(nextTrackData.getFirstIndex().getPosition());
+            trackEndTime = convertToTime(nextTrackData.getFirstIndex().getPosition());
         }
+
+        // It is assumed that the Audio file is located next to the source CUE file
+        Path audioFilePath = sourceFile.toPath().resolveSibling(trackData.getParent().getFile());
+        FileTime audioLastModifiedTime = Files.getLastModifiedTime(audioFilePath);
 
         return CueTrackPayload
             .builder()
-            // It is assumed that the Audio file is located next to the source CUE file.
-            .audioFilePath(sourceFile.toPath().resolveSibling(trackData.getParent().getFile()))
+            .audioFilePath(audioFilePath)
             .title(trackData.getMetaData(MetaDataField.TITLE))
             .songNumber(trackData.getNumber())
-            .startTime(startTime)
-            .endTime(endTime)
+            .startTime(trackStartTime)
+            .endTime(trackEndTime)
             .sourceFile(sourceFile)
-            .sourceFileTime(sourceFileTime)
+            .audioFileTime(audioLastModifiedTime)
             .build();
     }
 
@@ -254,7 +258,7 @@ public class RecoderService {
 
         return this.processRunner.execCommandAsync(command, trackPayload.getSourceFile())
                                  .orTimeout(10, TimeUnit.MINUTES) //TODO
-                                 .thenApply(preserveTimestampAction(targetFile, trackPayload.getSourceFileTime()))
+                                 .thenApply(preserveTimestampAction(targetFile, trackPayload.getAudioFileTime()))
                                  .whenComplete(oneFileProcessCompleteAction(targetFile)) // TODO:
                                  .handle(oneFileProcessResultAction());
     }
