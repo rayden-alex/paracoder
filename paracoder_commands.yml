@@ -7,6 +7,9 @@ defaults:
   # w(cc) = cc^0.75
   # For 5.1 multichannel audio equivalent bitrate is 192 * w(5.1)/w(2.0) = 192 * (5.1/2.0)^0.75 = 387 kbps (~384 kbps)
 
+  ffmpeg: "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
+  opus: "\"c:\\Rip\\opus-tools\\opusenc.exe\" --quiet --music --vbr"
+
 
 pattern:
   fileExtensions:
@@ -23,15 +26,25 @@ pattern:
 
   commandTemplate:
     flac: >-
-      "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
+      ${defaults.opus} --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
     wav: >-
-      "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
-    
-    cue: >-
-      "c:\Rip\ffmpeg\bin\ffmpeg.exe" -hide_banner -loglevel error -nostats -nostdin -i "{{F}}" -c:v copy -c:a copy -ss {{ST}} -to {{ET}} "{{D}}{{P}}{{NUM}}. {{TITLE}}.opus"
+      ${defaults.opus} --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
+
+    # -f lavfi -i nullsrc=s=128x128  --- Creates an additional dummy video stream
+    # -map 0:v?  --- Use first input video stream if exists. When this stream is not exists then second dummy video stream will be used.
+    # -c:v png -update 1 -frames:v 1 -y   --- Extract video stream to file using PNG codec. Update file on every new frame. Use only first frame. Overwrite file if it already exists.
+    cue_opus: >-
+      ${defaults.ffmpeg} -i "{{F}}" -f lavfi -i nullsrc=s=128x128 -map 0:v? -c:v png -update 1 -frames:v 1 -y "{{D}}{{P}}Cover_ffmpeg.png" -map 0:a -c:a copy -ss {{CUE_ST}} -to {{CUE_ET}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+#      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a copy -ss {{CUE_ST}} -to {{CUE_ET}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
+    cue_mp3: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a copy -ss {{CUE_ST}} -to {{CUE_ET}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.mp3"
+
+    cue_flac: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -ss {{CUE_ST}} -to {{CUE_ET}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
+    cue_alac: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -ss {{CUE_ST}} -to {{CUE_ET}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     any: >-
-      "c:\Rip\ffmpeg\bin\ffmpeg.exe" -hide_banner -loglevel error -nostats -nostdin -i "{{F}}" -c:v copy -c:a flac -f flac - | "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
-
-
-#   flac -e -f --skip=00:00,00 --until 02:08,266 --no-seektable "Inner Shrine - Nocturnal Rhymes Entangled in Silence.flac" -o - | opusenc.exe --music --vbr --bitrate 192 - 777.opus
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
