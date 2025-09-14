@@ -34,14 +34,14 @@ pattern:
     # -map 0:v?  --- Use first input video stream if exists. When this stream is not exists then second dummy video stream will be used.
     # -c:v png -update 1 -frames:v 1 -y   --- Extract video stream to file using PNG codec. Update file on every new frame. Use only first frame. Overwrite file if it already exists.
     cue_opus: >-
-      ${defaults.ffmpeg} -i "{{F}}" -f lavfi -i nullsrc=s=128x128 -map 0:v? -c:v png -update 1 -frames:v 1 -y "{{D}}{{P}}Cover_ffmpeg.png" -map 0:a -c:a copy -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+      ${defaults.ffmpeg} -i "{{F}}" -f lavfi -i nullsrc=s=128x128 -map 0:v? -c:v png -update 1 -frames:v 1 -y "{{D}}{{P}}Cover_ffmpeg.png" -map 0:a -c:a copy -map_metadata 0:s:0 -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 #      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a copy -ss {{CUE_ST}} -to {{CUE_ET}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     cue_mp3: >-
       ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a copy -ss {{CUE_ST}} -to {{CUE_ET}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.mp3"
 
     cue_flac: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -ss {{CUE_ST}} -to {{CUE_ET}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:0 -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     cue_alac: >-
       ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -ss {{CUE_ST}} -to {{CUE_ET}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"

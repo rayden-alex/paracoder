@@ -15,10 +15,11 @@ class RecodeCommandTest {
 
     @SuppressWarnings("MagicNumber")
     @Test
-    void getFFMpegMetadataTest() {
+    void makeFFMpegMetadataTest() {
         var trackPayload = CueTrackPayload
             .builder()
-            .songNumber(8)
+            .trackNumber(8)
+            .totalTracks(11)
             .title("Song tittle")
             .performer("Song performer")
             .album("Song album")
@@ -30,7 +31,7 @@ class RecodeCommandTest {
             .totalDiscs(null) // should not be included in the metadata
             .build();
 
-        String metadata = this.recodeCommand.getFFMpegMetadata(trackPayload);
+        String metadata = this.recodeCommand.makeFFMpegMetadata(trackPayload);
 
         assertThat(metadata)
             .contains(
@@ -38,6 +39,7 @@ class RecodeCommandTest {
                 " -metadata TITLE=\"Song tittle\" ",
                 " -metadata ALBUM=\"Song album\" ",
                 " -metadata TRACK=\"08\" ",
+                " -metadata TOTALTRACKS=\"11\" ",
                 " -metadata DATE=\"2001\" ",
                 " -metadata COMMENT=\"Some comment\" "
             )

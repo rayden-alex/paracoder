@@ -229,7 +229,8 @@ public class RecoderService {
 
         return CueTrackPayload
             .builder()
-            .songNumber(trackData.getNumber())
+            .trackNumber(trackData.getNumber())
+            .totalTracks(trackData.getParent().getTrackData().size())
             .title(trackData.getTitle())
             .performer(trackData.getMetaData(MetaDataField.PERFORMER))
             .album(cueSheet.getTitle())

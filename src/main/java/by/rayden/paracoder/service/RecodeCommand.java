@@ -44,14 +44,14 @@ public class RecodeCommand {
         String extension = FilenameUtils.getExtension(file.toString());
         String commandTemplate = getCommandTemplate(extension.toLowerCase());
 
-        return makeCommandFromTemplate(commandTemplate, file.toString());
+        return fillCommandPlaceholders(commandTemplate, file.toString());
     }
 
     public String getCommand(CueTrackPayload cueTrackPayload) {
         String audioFileExt = FilenameUtils.getExtension(cueTrackPayload.getAudioFilePath().toString());
         String commandTemplate = getCommandTemplate("cue_" + audioFileExt.toLowerCase());
 
-        return makeCommandFromTemplate(commandTemplate, cueTrackPayload);
+        return fillCommandPlaceholders(commandTemplate, cueTrackPayload);
     }
 
     private String getCommandTemplate(String extension) {
@@ -60,27 +60,27 @@ public class RecodeCommand {
             commandTemplateMap.get(extension) : commandTemplateMap.get("any");
     }
 
-    private String makeCommandFromTemplate(String commandTemplate, String filePath) {
+    private String fillCommandPlaceholders(String commandTemplate, String filePath) {
         return commandTemplate.replace("{{F}}", filePath)
                               .replace("{{D}}", FilenameUtils.getPrefix(filePath))
                               .replace("{{P}}", FilenameUtils.getPath(filePath))
                               .replace("{{N}}", FilenameUtils.getBaseName(filePath));
     }
 
-    private String makeCommandFromTemplate(String commandTemplate, CueTrackPayload trackPayload) {
+    private String fillCommandPlaceholders(String commandTemplate, CueTrackPayload trackPayload) {
         String filePath = trackPayload.getAudioFilePath().toString();
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
-        return makeCommandFromTemplate(commandTemplate, filePath)
+        return fillCommandPlaceholders(commandTemplate, filePath)
             .replace("{{CUE_ST}}", trackPayload.getStartTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_ET}}", trackPayload.getEndTime().format(FFMPEG_TIME_FORMATTER))
-            .replace("{{CUE_METADATA}}", getFFMpegMetadata(trackPayload))
-            .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.getSongNumber()))
+            .replace("{{CUE_METADATA}}", makeFFMpegMetadata(trackPayload))
+            .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.getTrackNumber()))
             .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getTitle())));
     }
 
     @VisibleForTesting
-    String getFFMpegMetadata(CueTrackPayload trackPayload) {
+    String makeFFMpegMetadata(CueTrackPayload trackPayload) {
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
         var metadata = new HashMap<String, Object>();
@@ -88,8 +88,10 @@ public class RecodeCommand {
         metadata.put("ARTIST", trackPayload.getPerformer());
         metadata.put("ALBUM", trackPayload.getAlbum());
         metadata.put("TITLE", trackPayload.getTitle());
-        metadata.put("TRACK", numberFormater.format(trackPayload.getSongNumber()));
+        metadata.put("TRACK", numberFormater.format(trackPayload.getTrackNumber()));
+        metadata.put("TOTALTRACKS", numberFormater.format(trackPayload.getTotalTracks()));
         metadata.put("DISCNUMBER", trackPayload.getDiscNumber());
+        metadata.put("TOTALDISCS", trackPayload.getTotalDiscs());
         metadata.put("GENRE", trackPayload.getGenre());
         metadata.put("DATE", trackPayload.getYear());
         metadata.put("COMMENT", trackPayload.getComment());

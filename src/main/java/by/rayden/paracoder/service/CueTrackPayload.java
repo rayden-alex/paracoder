@@ -17,7 +17,8 @@ import java.time.LocalTime;
 public class CueTrackPayload {
     private Path audioFilePath;
 
-    private int songNumber;
+    private int trackNumber;
+    private int totalTracks;
     private String title;
     private String performer;
 
