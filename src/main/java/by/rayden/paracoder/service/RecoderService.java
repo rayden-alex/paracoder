@@ -186,7 +186,7 @@ public class RecoderService {
             return cue.getFileData().stream()
                       .map(FileData::getTrackData)
                       .flatMap(Collection::stream)
-                      .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // todo
+                      .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // TODO: Do I need this ?
                       .map(trackData -> getCueTrackPayload(trackData, sourceFile))
                       .map(this::createFutureForCueTrack)
                       .toList();
@@ -210,28 +210,39 @@ public class RecoderService {
 
     @SneakyThrows
     private CueTrackPayload getCueTrackPayload(TrackData trackData, File sourceFile) {
-        LocalTime trackStartTime = convertToTime(trackData.getFirstIndex().getPosition());
+        LocalTime trackStartTime = convertToTime(trackData.getStartIndex()
+                                                          .getPosition()); // TODO: Do I need a PreGap processing ?
 
         LocalTime trackEndTime;
         if (trackData == trackData.getParent().getTrackData().getLast()) {
             trackEndTime = END_OF_FILE_TIME; // to the end of file
         } else {
-            TrackData nextTrackData = trackData.getParent().getTrackData().get(trackData.getNumber());
-            trackEndTime = convertToTime(nextTrackData.getFirstIndex().getPosition());
+            int nextTrackIndex = trackData.getNumber();
+            TrackData nextTrackData = trackData.getParent().getTrackData().get(nextTrackIndex);
+            trackEndTime = convertToTime(nextTrackData.getStartIndex().getPosition());
         }
 
         // It is assumed that the Audio file is located next to the source CUE file
         Path audioFilePath = sourceFile.toPath().resolveSibling(trackData.getParent().getFile());
         FileTime audioLastModifiedTime = Files.getLastModifiedTime(audioFilePath);
+        CueSheet cueSheet = trackData.getParent().getParent();
 
         return CueTrackPayload
             .builder()
-            .audioFilePath(audioFilePath)
-            .title(trackData.getMetaData(MetaDataField.TITLE))
             .songNumber(trackData.getNumber())
+            .title(trackData.getTitle())
+            .performer(trackData.getMetaData(MetaDataField.PERFORMER))
+            .album(cueSheet.getTitle())
+            .year(cueSheet.getYear() != -1 ? cueSheet.getYear() : null)
+            .genre(cueSheet.getGenre())
+            .comment(cueSheet.getComment())
+            .discId(cueSheet.getDiscId())
+            .discNumber(cueSheet.getDiscNumber()!= -1 ? cueSheet.getDiscNumber() : null)
+            .totalDiscs(cueSheet.getTotalDiscs()!= -1 ? cueSheet.getTotalDiscs() : null)
             .startTime(trackStartTime)
             .endTime(trackEndTime)
             .sourceFile(sourceFile)
+            .audioFilePath(audioFilePath)
             .audioFileTime(audioLastModifiedTime)
             .build();
     }

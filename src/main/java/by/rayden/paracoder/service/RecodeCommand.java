@@ -2,23 +2,29 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.config.PatternProperties;
 import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Service
 public class RecodeCommand {
     /**
      * Map to replace invalid characters in file name to HomoGlyphs
      */
+    @SuppressWarnings("UnnecessaryUnicodeEscape")
     private static final Map<Character, Character> SANITIZE_FILENAME_MAP = Map.of(
+        '\t', ' ',
+        '"', '″',
         '/', '╱',
-        '\\', '﹨',
+        '\\', '⧹',
         '|', '￨',
         '?', '？',
         ':', '∶',
@@ -68,8 +74,35 @@ public class RecodeCommand {
         return makeCommandFromTemplate(commandTemplate, filePath)
             .replace("{{CUE_ST}}", trackPayload.getStartTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_ET}}", trackPayload.getEndTime().format(FFMPEG_TIME_FORMATTER))
+            .replace("{{CUE_METADATA}}", getFFMpegMetadata(trackPayload))
             .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.getSongNumber()))
             .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getTitle())));
+    }
+
+    @VisibleForTesting
+    String getFFMpegMetadata(CueTrackPayload trackPayload) {
+        final DecimalFormat numberFormater = new DecimalFormat("#00");
+
+        var metadata = new HashMap<String, Object>();
+
+        metadata.put("ARTIST", trackPayload.getPerformer());
+        metadata.put("ALBUM", trackPayload.getAlbum());
+        metadata.put("TITLE", trackPayload.getTitle());
+        metadata.put("TRACK", numberFormater.format(trackPayload.getSongNumber()));
+        metadata.put("DISCNUMBER", trackPayload.getDiscNumber());
+        metadata.put("GENRE", trackPayload.getGenre());
+        metadata.put("DATE", trackPayload.getYear());
+        metadata.put("COMMENT", trackPayload.getComment());
+        metadata.put("DISCID", trackPayload.getDiscId());
+
+        return metadata.entrySet().stream()
+                       .filter(entry -> entry.getValue() != null && !entry.getValue().toString().trim().isEmpty())
+                       .map(this::createMetadataCommand)
+                       .collect(Collectors.joining(" ", " ", " "));
+    }
+
+    private String createMetadataCommand(Map.Entry<String, Object> entry) {
+        return "-metadata " + entry.getKey() + "=" + "\"" + entry.getValue() + "\"";
     }
 
     private String sanitizeFileName(String name) {
