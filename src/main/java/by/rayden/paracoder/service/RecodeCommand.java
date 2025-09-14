@@ -76,7 +76,8 @@ public class RecodeCommand {
             .replace("{{CUE_ET}}", trackPayload.getEndTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_METADATA}}", makeFFMpegMetadata(trackPayload))
             .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.getTrackNumber()))
-            .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getTitle())));
+            .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getTitle())))
+            .replace("{{CUE_ARTIST}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getPerformer())));
     }
 
     @VisibleForTesting
