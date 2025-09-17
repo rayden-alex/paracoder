@@ -2,6 +2,8 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
 import lombok.SneakyThrows;
+import org.apache.commons.io.input.BOMInputStream;
+import org.digitalmediaserver.cuelib.CueParser;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -57,5 +59,14 @@ class RecoderServiceTest {
         osNative.deleteToTrash(path);
 
         assertThat(path.toFile()).doesNotExist();
+    }
+
+    @Test
+    void cueParserTest() throws Exception {
+        var bomIn = BOMInputStream.builder().setPath(Paths.get("src/test/resources/CyrillicUTF8.cue")).get();
+        var cueSheet = CueParser.parse(bomIn, StandardCharsets.UTF_8);
+
+        assertThat(cueSheet.getGenre()).isEqualTo("Pop Rock");
+        assertThat(cueSheet.getPerformer()).isEqualTo("Мара");
     }
 }

@@ -7,6 +7,7 @@ import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.input.BOMInputStream;
 import org.digitalmediaserver.cuelib.CueParser;
 import org.digitalmediaserver.cuelib.CueSheet;
 import org.digitalmediaserver.cuelib.FileData;
@@ -16,7 +17,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
@@ -185,17 +185,19 @@ public class RecoderService {
         }
     }
 
-    private List<CompletableFuture<Integer>> createFuturesForCueFile(File sourceFile) {
+    private List<CompletableFuture<Integer>> createFuturesForCueFile(Path sourceFilePath) {
         try {
-            CueSheet cue = CueParser.parse(sourceFile.toPath(), StandardCharsets.UTF_8);
+            var bomInputStream = BOMInputStream.builder().setPath(sourceFilePath).get();
+            var cueSheet = CueParser.parse(bomInputStream, StandardCharsets.UTF_8);
 
-            return cue.getFileData().stream()
-                      .map(FileData::getTrackData)
-                      .flatMap(Collection::stream)
-                      .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // TODO: Do I need this ?
-                      .map(trackData -> getCueTrackPayload(trackData, sourceFile))
-                      .map(this::createFutureForCueTrack)
-                      .toList();
+            return cueSheet
+                .getFileData().stream()
+                .map(FileData::getTrackData)
+                .flatMap(Collection::stream)
+                .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // TODO: Do I need this ?
+                .map(trackData -> getCueTrackPayload(trackData, sourceFilePath))
+                .map(this::createFutureForCueTrack)
+                .toList();
         } catch (Exception e) {
             return Collections.singletonList(CompletableFuture.failedFuture(e));
         }

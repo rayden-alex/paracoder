@@ -1,0 +1,67 @@
+﻿REM GENRE "Pop Rock"
+REM DATE 2013
+REM DISCID AE09C50C
+REM COMMENT "ExactAudioCopy v1.0b3"
+PERFORMER "Мара"
+TITLE "Почувствуй разницу"
+FILE "Мара - 2013 - Почувствуй разницу.opus" WAVE
+  TRACK 01 AUDIO
+    TITLE "Intro"
+    PERFORMER "Мара"
+    ISRC RUB311301501
+    INDEX 01 00:00:00
+  TRACK 02 AUDIO
+    TITLE "Новое время"
+    PERFORMER "Мара"
+    ISRC RUB311301502
+    INDEX 01 00:57:57
+  TRACK 03 AUDIO
+    TITLE "Angel Schlesser"
+    PERFORMER "Мара"
+    ISRC RUB311301503
+    INDEX 01 03:49:00
+  TRACK 04 AUDIO
+    TITLE "Невзаимная любовь"
+    PERFORMER "Мара"
+    ISRC RUB311301504
+    INDEX 01 07:56:19
+  TRACK 05 AUDIO
+    TITLE "Рельс линия"
+    PERFORMER "Мара"
+    ISRC RUB311301505
+    INDEX 01 11:33:50
+  TRACK 06 AUDIO
+    TITLE "По дороге к Амстердаму"
+    PERFORMER "Мара"
+    ISRC RUB311301506
+    INDEX 01 14:54:37
+  TRACK 07 AUDIO
+    TITLE "Трубочный табак"
+    PERFORMER "Мара"
+    ISRC RUB311301507
+    INDEX 01 18:16:03
+  TRACK 08 AUDIO
+    TITLE "Жены"
+    PERFORMER "Мара"
+    ISRC RUB311301508
+    INDEX 01 21:00:04
+  TRACK 09 AUDIO
+    TITLE "Че на чем"
+    PERFORMER "Мара"
+    ISRC RUB311301509
+    INDEX 01 24:18:67
+  TRACK 10 AUDIO
+    TITLE "Никому не рассказывай"
+    PERFORMER "Мара"
+    ISRC RUB311301510
+    INDEX 01 28:58:03
+  TRACK 11 AUDIO
+    TITLE "220 V"
+    PERFORMER "Мара"
+    ISRC RUB311301511
+    INDEX 01 33:07:58
+  TRACK 12 AUDIO
+    TITLE "Холодным мужчинам"
+    PERFORMER "Мара"
+    ISRC RUB311301512
+    INDEX 01 37:39:66
