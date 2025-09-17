@@ -8,7 +8,7 @@ plugins {
     // Generating a git.properties file containing information about the state of your git source code repository when the project was built
     // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
     // https://github.com/n0mer/gradle-git-properties
-    id 'com.gorylenko.gradle-git-properties' version '2.5.2'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
 group = 'by.rayden'
@@ -80,7 +80,7 @@ springBoot {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -117,7 +117,7 @@ dependencies {
 }
 
 lombok {
-    version = '1.18.38'
+    version = '1.18.40'
 }
 
 tasks.withType(JavaCompile).configureEach {
