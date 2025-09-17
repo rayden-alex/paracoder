@@ -4,8 +4,10 @@ import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -49,10 +51,10 @@ class RecoderServiceTest {
     @SneakyThrows
     void removeFileToTrash() {
         Path path = Files.createTempFile("paracoder", "test.tmp");
-        assertThat(path.toFile()).exists();
+        assertThat(Files.exists(path));
 
         var osNative = new OsNativeWindowsImpl();
-        osNative.deleteToTrash(path.toFile());
+        osNative.deleteToTrash(path);
 
         assertThat(path.toFile()).doesNotExist();
     }

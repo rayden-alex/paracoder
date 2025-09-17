@@ -4,7 +4,6 @@ import lombok.Builder;
 import lombok.Getter;
 import org.springframework.lang.Nullable;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalTime;
@@ -15,8 +14,6 @@ import java.time.LocalTime;
 @Getter
 @Builder
 public class CueTrackPayload {
-    private Path audioFilePath;
-
     private int trackNumber;
     private int totalTracks;
     private String title;
@@ -46,6 +43,7 @@ public class CueTrackPayload {
     private LocalTime startTime;
     private LocalTime endTime;
 
-    private File sourceFile;
+    private Path audioFilePath;
+    private Path sourceFilePath;
     private FileTime audioFileTime;
 }

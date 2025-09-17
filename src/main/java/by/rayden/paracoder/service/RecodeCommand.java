@@ -5,7 +5,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -40,11 +40,11 @@ public class RecodeCommand {
         this.patternProperties = patternProperties;
     }
 
-    public String getCommand(File file) {
-        String extension = FilenameUtils.getExtension(file.toString());
+    public String getCommand(Path filePath) {
+        String extension = FilenameUtils.getExtension(filePath.toString());
         String commandTemplate = getCommandTemplate(extension.toLowerCase());
 
-        return fillCommandPlaceholders(commandTemplate, file.toString());
+        return fillCommandPlaceholders(commandTemplate, filePath.toString());
     }
 
     public String getCommand(CueTrackPayload cueTrackPayload) {

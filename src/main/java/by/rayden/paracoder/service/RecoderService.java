@@ -53,6 +53,12 @@ public class RecoderService {
 
     // https://javascript.info/regexp-greedy-and-lazy#alternative-approach
     public static final Pattern LAST_QUOTED_STRING_PATTERN = Pattern.compile("\"(?<targetFile>[^\"]+?)\"$");
+
+
+    /**
+     * For the last track, there is no way to calculate its end time.
+     * Therefore, we specify a fake value in advance that is greater than the possible real value.
+     */
     private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
 
     private final PatternProperties patternProperties;
@@ -163,19 +169,19 @@ public class RecoderService {
      */
     @SneakyThrows
     private List<CompletableFuture<Integer>> processFile(Map.Entry<Path, BasicFileAttributes> entry) {
-        File sourceFile = entry.getKey().toFile();
+        Path sourceFilePath = entry.getKey();
         FileTime sourceFileTime = entry.getValue().lastModifiedTime();
 
-        if (!sourceFile.exists()) {
-            OutUtils.ansiErr("Source file doesn't exists: @|red " + sourceFile + "|@");
+        if (!Files.exists(sourceFilePath)) {
+            OutUtils.ansiErr("Source file doesn't exists: @|red " + sourceFilePath + "|@");
             return Collections.singletonList(CompletableFuture.completedFuture(CommandLine.ExitCode.SOFTWARE));
         }
 
-        String extension = FilenameUtils.getExtension(sourceFile.toString());
+        String extension = FilenameUtils.getExtension(sourceFilePath.toString());
         if ("cue".equalsIgnoreCase(extension)) {
-            return createFuturesForCueFile(sourceFile);
+            return createFuturesForCueFile(sourceFilePath);
         } else {
-            return Collections.singletonList(createFutureForOrdinalFile(sourceFile, sourceFileTime));
+            return Collections.singletonList(createFutureForOrdinalFile(sourceFilePath, sourceFileTime));
         }
     }
 
@@ -195,23 +201,23 @@ public class RecoderService {
         }
     }
 
-    private CompletableFuture<Integer> createFutureForOrdinalFile(File sourceFile, FileTime sourceFileTime) {
-        String command = this.recodeCommand.getCommand(sourceFile);
-        File targetFile = getTargetFile(command);
+    private CompletableFuture<Integer> createFutureForOrdinalFile(Path sourceFilePath, FileTime sourceFileTime) {
+        String command = this.recodeCommand.getCommand(sourceFilePath);
+        Path targetFilePath = getTargetFilePath(command);
 
         return this.processRunner
-            .execCommandAsync(command, sourceFile)
+            .execCommandAsync(command, sourceFilePath)
             .orTimeout(10, TimeUnit.MINUTES) //??
-            .thenApply(preserveTimestampAction(targetFile, sourceFileTime))
-            .thenApply(removeToTrashAction(sourceFile))
-            .whenComplete(oneFileProcessCompleteAction(sourceFile))
+            .thenApply(preserveTimestampAction(targetFilePath, sourceFileTime))
+            .thenApply(removeToTrashAction(sourceFilePath))
+            .whenComplete(oneFileProcessCompleteAction(sourceFilePath))
             .handle(oneFileProcessResultAction());
     }
 
     @SneakyThrows
-    private CueTrackPayload getCueTrackPayload(TrackData trackData, File sourceFile) {
-        LocalTime trackStartTime = convertToTime(trackData.getStartIndex()
-                                                          .getPosition()); // TODO: Do I need a PreGap processing ?
+    private CueTrackPayload getCueTrackPayload(TrackData trackData, Path sourceFilePath) {
+        Position trackStartPosition = trackData.getStartIndex().getPosition();
+        LocalTime trackStartTime = convertToTime(trackStartPosition); // TODO: Do I need a PreGap processing ?
 
         LocalTime trackEndTime;
         if (trackData == trackData.getParent().getTrackData().getLast()) {
@@ -223,7 +229,7 @@ public class RecoderService {
         }
 
         // It is assumed that the Audio file is located next to the source CUE file
-        Path audioFilePath = sourceFile.toPath().resolveSibling(trackData.getParent().getFile());
+        Path audioFilePath = sourceFilePath.resolveSibling(trackData.getParent().getFile());
         FileTime audioLastModifiedTime = Files.getLastModifiedTime(audioFilePath);
         CueSheet cueSheet = trackData.getParent().getParent();
 
@@ -242,7 +248,7 @@ public class RecoderService {
             .totalDiscs(cueSheet.getTotalDiscs()!= -1 ? cueSheet.getTotalDiscs() : null)
             .startTime(trackStartTime)
             .endTime(trackEndTime)
-            .sourceFile(sourceFile)
+            .sourceFilePath(sourceFilePath)
             .audioFilePath(audioFilePath)
             .audioFileTime(audioLastModifiedTime)
             .build();
@@ -266,43 +272,41 @@ public class RecoderService {
 
     private CompletableFuture<Integer> createFutureForCueTrack(CueTrackPayload trackPayload) {
         String command = this.recodeCommand.getCommand(trackPayload);
-        File targetFile = getTargetFile(command);
+        Path targetFilePath = getTargetFilePath(command);
 
-        return this.processRunner.execCommandAsync(command, trackPayload.getSourceFile())
+        return this.processRunner.execCommandAsync(command, trackPayload.getSourceFilePath())
                                  .orTimeout(10, TimeUnit.MINUTES) //TODO
-                                 .thenApply(preserveTimestampAction(targetFile, trackPayload.getAudioFileTime()))
-                                 .whenComplete(oneFileProcessCompleteAction(targetFile)) // TODO:
+                                 .thenApply(preserveTimestampAction(targetFilePath, trackPayload.getAudioFileTime()))
+                                 .whenComplete(oneFileProcessCompleteAction(targetFilePath)) // TODO:
                                  .handle(oneFileProcessResultAction());
     }
 
-    private Function<Integer, Integer> preserveTimestampAction(File targetFile, FileTime sourceFileTime) {
+    private Function<Integer, Integer> preserveTimestampAction(Path targetFilePath, FileTime sourceFileTime) {
         return exitCode -> {
             if ((exitCode == CommandLine.ExitCode.OK) && this.paraCoderParams.preserveFileTimestamp()) {
-                if (!setFileLastModifiedTime(targetFile, sourceFileTime)) {
-                    throw new RuntimeException("Error on setting timestamp to target targetFile " + targetFile);
-                }
+                setFileLastModifiedTime(targetFilePath, sourceFileTime);
             }
             return exitCode;
         };
     }
 
-    private Function<Integer, Integer> removeToTrashAction(File sourceFile) {
+    private Function<Integer, Integer> removeToTrashAction(Path sourceFilePath) {
         return exitCode -> {
             if ((exitCode == CommandLine.ExitCode.OK) && this.paraCoderParams.deleteSourceFilesToTrash()) {
-                deleteFileToTrash(sourceFile);
+                deleteFileToTrash(sourceFilePath);
             }
             return exitCode;
         };
     }
 
-    private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(File sourceFile) {
+    private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
         return (exitCode, t) -> {
             if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
-                log.info("Completed OK {}", sourceFile);
-                OutUtils.ansiOut("Completed: @|blue " + sourceFile + "|@");
+                log.info("Completed OK {}", sourceFilePath);
+                OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
             } else {
-                log.error("Error on processing source file: {}", sourceFile, t);
-                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFile + "|@");
+                log.error("Error on processing source file: {}", sourceFilePath, t);
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + "|@");
             }
         };
     }
@@ -321,42 +325,42 @@ public class RecoderService {
         };
     }
 
-    private File getTargetFile(String fileCommand) {
+    private Path getTargetFilePath(String fileCommand) {
         var matcher = LAST_QUOTED_STRING_PATTERN.matcher(fileCommand);
         if (matcher.find()) {
-            String targetFileName = matcher.group("targetFile");
-            return Path.of(targetFileName).toFile();
+            String targetFilePath = matcher.group("targetFile");
+            return Path.of(targetFilePath);
         } else {
             throw new RuntimeException("Error on getting the target file from command " + fileCommand);
         }
     }
 
     /**
-     * targetFile can be either a file or a directory
+     * targetFilePath can be either a file or a directory
      *
      * @see BasicFileAttributeView#setTimes(FileTime, FileTime, FileTime)
      */
-    private boolean setFileLastModifiedTime(File targetFile, FileTime sourceFileTime) {
-        long sourceFileLastModifiedTime = sourceFileTime.toMillis();
-        // See also: java.nio.file.attribute.BasicFileAttributeView.setTimes
-        return (targetFile.lastModified() == sourceFileLastModifiedTime) || targetFile.setLastModified(sourceFileLastModifiedTime);
+    @SneakyThrows
+    private void setFileLastModifiedTime(Path targetFilePath, FileTime sourceFileTime) {
+        if (!Files.getLastModifiedTime(targetFilePath).equals(sourceFileTime)) {
+            Files.setLastModifiedTime(targetFilePath, sourceFileTime);
+        }
     }
 
     private void processDir(Map.Entry<Path, BasicFileAttributes> entry) {
         Path dirPath = entry.getKey();
-        File dir = dirPath.toFile();
         FileTime sourceDirTime = entry.getValue().lastModifiedTime();
 
         if (this.paraCoderParams.preserveDirTimestamp()) {
             OutUtils.ansiOut("Processing dir: @|cyan " + dirPath + "|@");
-            setFileLastModifiedTime(dir, sourceDirTime);
+            setFileLastModifiedTime(dirPath, sourceDirTime);
             log.info("Completed dir OK {}", dirPath);
         }
     }
 
     @SneakyThrows
-    private void deleteFileToTrash(File file) {
-        this.osNative.deleteToTrash(file);
+    private void deleteFileToTrash(Path filePath) {
+        this.osNative.deleteToTrash(filePath);
     }
 
 }
