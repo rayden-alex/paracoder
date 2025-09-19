@@ -44,14 +44,14 @@ public class RecodeCommand {
         String extension = FilenameUtils.getExtension(filePath.toString());
         String commandTemplate = getCommandTemplate(extension.toLowerCase());
 
-        return fillCommandPlaceholders(commandTemplate, filePath.toString());
+        return resolvePlaceholders(commandTemplate, filePath.toString());
     }
 
     public String getCommand(CueTrackPayload cueTrackPayload) {
         String audioFileExt = FilenameUtils.getExtension(cueTrackPayload.getAudioFilePath().toString());
         String commandTemplate = getCommandTemplate("cue_" + audioFileExt.toLowerCase());
 
-        return fillCommandPlaceholders(commandTemplate, cueTrackPayload);
+        return resolvePlaceholders(commandTemplate, cueTrackPayload);
     }
 
     private String getCommandTemplate(String extension) {
@@ -60,18 +60,18 @@ public class RecodeCommand {
             commandTemplateMap.get(extension) : commandTemplateMap.get("any");
     }
 
-    private String fillCommandPlaceholders(String commandTemplate, String filePath) {
+    private String resolvePlaceholders(String commandTemplate, String filePath) {
         return commandTemplate.replace("{{F}}", filePath)
                               .replace("{{D}}", FilenameUtils.getPrefix(filePath))
                               .replace("{{P}}", FilenameUtils.getPath(filePath))
                               .replace("{{N}}", FilenameUtils.getBaseName(filePath));
     }
 
-    private String fillCommandPlaceholders(String commandTemplate, CueTrackPayload trackPayload) {
+    private String resolvePlaceholders(String commandTemplate, CueTrackPayload trackPayload) {
         String filePath = trackPayload.getAudioFilePath().toString();
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
-        return fillCommandPlaceholders(commandTemplate, filePath)
+        return resolvePlaceholders(commandTemplate, filePath)
             .replace("{{CUE_ST}}", trackPayload.getStartTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_ET}}", trackPayload.getEndTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_METADATA}}", makeFFMpegMetadata(trackPayload))

@@ -56,7 +56,7 @@ public class RecoderService {
 
 
     /**
-     * For the last track, there is no way to calculate its end time.
+     * For the last track, there is no easy way to calculate its end time.
      * Therefore, we specify a fake value in advance that is greater than the possible real value.
      */
     private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
