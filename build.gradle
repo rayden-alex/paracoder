@@ -84,18 +84,17 @@ java {
     }
 }
 
-
-configurations.configureEach {
-//	https://gradlehero.com/how-to-exclude-gradle-dependencies/
-    exclude group: 'io.micrometer'
-}
-
 repositories {
     mavenCentral()
 }
 
 configurations {
     mockitoAgent
+}
+
+configurations.configureEach {
+//	https://gradlehero.com/how-to-exclude-gradle-dependencies/
+    exclude group: 'io.micrometer'
 }
 
 dependencies {
@@ -156,4 +155,9 @@ test {
     jvmArgs += '--enable-native-access=ALL-UNNAMED'
     jvmArgs += '-Xshare:off'
     jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
+
+    // To show passed test in console output
+//    testLogging {
+//        events "passed", "skipped", "failed" // , "standardOut", "standardError"
+//    }
 }
