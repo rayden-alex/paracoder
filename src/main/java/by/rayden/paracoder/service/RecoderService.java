@@ -6,6 +6,7 @@ import by.rayden.paracoder.utils.OutUtils;
 import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.digitalmediaserver.cuelib.CueParser;
@@ -13,11 +14,13 @@ import org.digitalmediaserver.cuelib.CueSheet;
 import org.digitalmediaserver.cuelib.FileData;
 import org.digitalmediaserver.cuelib.Position;
 import org.digitalmediaserver.cuelib.TrackData;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
@@ -32,6 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -41,8 +45,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-
-import static org.digitalmediaserver.cuelib.CueSheet.MetaDataField;
 
 @Service
 @Slf4j
@@ -187,9 +189,7 @@ public class RecoderService {
 
     private List<CompletableFuture<Integer>> createFuturesForCueFile(Path sourceFilePath) {
         try {
-            var bomInputStream = BOMInputStream.builder().setPath(sourceFilePath).get();
-            var cueSheet = CueParser.parse(bomInputStream, StandardCharsets.UTF_8);
-
+            var cueSheet = readCueSheet(sourceFilePath);
             return cueSheet
                 .getFileData().stream()
                 .map(FileData::getTrackData)
@@ -216,19 +216,24 @@ public class RecoderService {
             .handle(oneFileProcessResultAction());
     }
 
+    /**
+     * If the source file has a BOM, then the corresponding charset will be used,
+     * otherwise UTF-8 will be used.
+     */
+    @VisibleForTesting
+    CueSheet readCueSheet(Path sourceFilePath) throws IOException {
+        var bomInputStream = BOMInputStream.builder().setPath(sourceFilePath).get();
+        Charset charset = Optional.ofNullable(bomInputStream.getBOM())
+                                  .map(ByteOrderMark::getCharsetName)
+                                  .map(Charset::forName)
+                                  .orElse(StandardCharsets.UTF_8);
+
+        return CueParser.parse(bomInputStream, charset);
+    }
+
     @SneakyThrows
     private CueTrackPayload getCueTrackPayload(TrackData trackData, Path sourceFilePath) {
-        Position trackStartPosition = trackData.getStartIndex().getPosition();
-        LocalTime trackStartTime = convertToTime(trackStartPosition); // TODO: Do I need a PreGap processing ?
-
-        LocalTime trackEndTime;
-        if (trackData == trackData.getParent().getTrackData().getLast()) {
-            trackEndTime = END_OF_FILE_TIME; // to the end of file
-        } else {
-            int nextTrackIndex = trackData.getNumber();
-            TrackData nextTrackData = trackData.getParent().getTrackData().get(nextTrackIndex);
-            trackEndTime = convertToTime(nextTrackData.getStartIndex().getPosition());
-        }
+        var trackInterval = getTrackInterval(trackData);
 
         // It is assumed that the Audio file is located next to the source CUE file
         Path audioFilePath = sourceFilePath.resolveSibling(trackData.getParent().getFile());
@@ -240,7 +245,7 @@ public class RecoderService {
             .trackNumber(trackData.getNumber())
             .totalTracks(trackData.getParent().getTrackData().size())
             .title(trackData.getTitle())
-            .performer(trackData.getMetaData(MetaDataField.PERFORMER))
+            .performer(trackData.getPerformer() == null ? cueSheet.getPerformer() : trackData.getPerformer())
             .album(cueSheet.getTitle())
             .year(cueSheet.getYear() != -1 ? cueSheet.getYear() : null)
             .genre(cueSheet.getGenre())
@@ -248,12 +253,30 @@ public class RecoderService {
             .discId(cueSheet.getDiscId())
             .discNumber(cueSheet.getDiscNumber()!= -1 ? cueSheet.getDiscNumber() : null)
             .totalDiscs(cueSheet.getTotalDiscs()!= -1 ? cueSheet.getTotalDiscs() : null)
-            .startTime(trackStartTime)
-            .endTime(trackEndTime)
+            .startTime(trackInterval.start)
+            .endTime(trackInterval.end)
             .sourceFilePath(sourceFilePath)
             .audioFilePath(audioFilePath)
             .audioFileTime(audioLastModifiedTime)
             .build();
+    }
+
+    private record TrackInterval(LocalTime start, LocalTime end) {
+    }
+
+    private TrackInterval getTrackInterval(TrackData trackData) {
+        Position startPosition = trackData.getStartIndex().getPosition();
+        LocalTime startTime = convertToTime(startPosition); // TODO: Do I need a PreGap processing ?
+
+        LocalTime endTime;
+        if (trackData == trackData.getParent().getTrackData().getLast()) {
+            endTime = END_OF_FILE_TIME; // to the end of file
+        } else {
+            int nextTrackIndex = trackData.getNumber();
+            TrackData nextTrackData = trackData.getParent().getTrackData().get(nextTrackIndex);
+            endTime = convertToTime(nextTrackData.getStartIndex().getPosition());
+        }
+        return new TrackInterval(startTime, endTime);
     }
 
     private LocalTime convertToTime(@Nullable Position position) {

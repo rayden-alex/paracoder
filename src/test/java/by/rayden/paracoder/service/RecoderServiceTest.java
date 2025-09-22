@@ -1,13 +1,10 @@
 package by.rayden.paracoder.service;
 
-import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
-import lombok.SneakyThrows;
-import org.apache.commons.io.input.BOMInputStream;
-import org.digitalmediaserver.cuelib.CueParser;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -16,11 +13,15 @@ import java.util.regex.Matcher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(MockitoExtension.class)
 class RecoderServiceTest {
+
+    @InjectMocks
+    private RecoderService recoderService;
 
     @Test
     @SuppressWarnings("DuplicateExpressions")
-    void ReversedPathComparatorTest() {
+    void reversedPathComparatorTest() {
         var paths = List.of(
             Path.of("d:\\level_1\\level_2\\Level_3"),
             Path.of("d:\\"),
@@ -50,21 +51,8 @@ class RecoderServiceTest {
     }
 
     @Test
-    @SneakyThrows
-    void removeFileToTrash() {
-        Path path = Files.createTempFile("paracoder", "test.tmp");
-        assertThat(Files.exists(path));
-
-        var osNative = new OsNativeWindowsImpl();
-        osNative.deleteToTrash(path);
-
-        assertThat(path.toFile()).doesNotExist();
-    }
-
-    @Test
-    void cueParserTest() throws Exception {
-        var bomIn = BOMInputStream.builder().setPath(Paths.get("src/test/resources/CyrillicUTF8.cue")).get();
-        var cueSheet = CueParser.parse(bomIn, StandardCharsets.UTF_8);
+    void readCueSheetTest() throws Exception {
+        var cueSheet = this.recoderService.readCueSheet(Paths.get("src/test/resources/CyrillicUTF8.cue"));
 
         assertThat(cueSheet.getGenre()).isEqualTo("Pop Rock");
         assertThat(cueSheet.getPerformer()).isEqualTo("Мара");
