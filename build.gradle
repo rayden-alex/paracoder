@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.5'
+    id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'io.freefair.lombok' version '8.14.2'
     id 'me.qoomon.git-versioning' version '6.4.4'
@@ -109,14 +109,14 @@ dependencies {
     implementation 'org.digitalmediaserver:cuelib-core:2.0.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.mockito:mockito-core:5.19.0'
-    mockitoAgent('org.mockito:mockito-core:5.19.0') {
+    testImplementation 'org.mockito:mockito-core:5.20.0'
+    mockitoAgent('org.mockito:mockito-core:5.20.0') {
         transitive = false
     }
 }
 
 lombok {
-    version = '1.18.40'
+    version = '1.18.42'
 }
 
 tasks.withType(JavaCompile).configureEach {
