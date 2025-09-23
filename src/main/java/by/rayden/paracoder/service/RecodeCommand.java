@@ -42,22 +42,22 @@ public class RecodeCommand {
 
     public String getCommand(Path filePath) {
         String extension = FilenameUtils.getExtension(filePath.toString());
-        String commandTemplate = getCommandTemplate(extension.toLowerCase());
+        String commandTemplate = getCommandTemplate(extension.toLowerCase(), "any");
 
         return resolvePlaceholders(commandTemplate, filePath.toString());
     }
 
     public String getCommand(CueTrackPayload cueTrackPayload) {
         String audioFileExt = FilenameUtils.getExtension(cueTrackPayload.getAudioFilePath().toString());
-        String commandTemplate = getCommandTemplate("cue_" + audioFileExt.toLowerCase());
+        String commandTemplate = getCommandTemplate("cue_" + audioFileExt.toLowerCase(), "cue_any");
 
         return resolvePlaceholders(commandTemplate, cueTrackPayload);
     }
 
-    private String getCommandTemplate(String extension) {
+    private String getCommandTemplate(String extension, String defaultExt) {
         Map<String, String> commandTemplateMap = this.patternProperties.getCommandTemplate();
         return commandTemplateMap.containsKey(extension) ?
-            commandTemplateMap.get(extension) : commandTemplateMap.get("any");
+            commandTemplateMap.get(extension) : commandTemplateMap.get(defaultExt);
     }
 
     private String resolvePlaceholders(String commandTemplate, String filePath) {
