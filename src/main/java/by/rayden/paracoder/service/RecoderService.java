@@ -45,6 +45,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -56,12 +57,16 @@ public class RecoderService {
     // https://javascript.info/regexp-greedy-and-lazy#alternative-approach
     public static final Pattern LAST_QUOTED_STRING_PATTERN = Pattern.compile("\"(?<targetFile>[^\"]+?)\"$");
 
-
     /**
      * For the last track, there is no easy way to calculate its end time.
      * Therefore, we specify a fake value in advance that is greater than the possible real value.
      */
     private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
+
+    /**
+     * Extension of CUE-files
+     */
+    private static final String CUE_EXT = "cue";
 
     private final PatternProperties patternProperties;
     private final ProcessRunner processRunner;
@@ -89,7 +94,8 @@ public class RecoderService {
         }
 
         try {
-            Map<Path, BasicFileAttributes> pathMap = buildAbsolutePathTree();
+            Map<Path, BasicFileAttributes> pathMap = getFilteredPathMap(buildAbsolutePathTree());
+
             int maxExitCode = asyncProcessFiles(pathMap);
             processDirs(pathMap);
 
@@ -101,6 +107,45 @@ public class RecoderService {
             OutUtils.ansiErr("Error: @|red " + e.getMessage() + "|@");
             return CommandLine.ExitCode.SOFTWARE;
         }
+    }
+
+    /**
+     * If necessary, it returns a filtered list, avoiding ambiguity - whether we want to recode the entire regular file
+     * or split it according to the СUE-file.
+     */
+    @VisibleForTesting
+    Map<Path, BasicFileAttributes> getFilteredPathMap(Map<Path, BasicFileAttributes> pathMap) {
+        Map<String, Long> countOfFilesByExtension = getCountOfFilesByExtension(pathMap);
+        if (countOfFilesByExtension.size() > 1 && countOfFilesByExtension.containsKey(CUE_EXT)) {
+            OutUtils.ansiOut("@|yellow WARNING! The source files contain both CUE-files and regular files.|@");
+            OutUtils.ansiOut("@|yellow This causes ambiguity during processing.|@");
+            OutUtils.ansiOut("@|yellow Therefore, only CUE-files will be processed.|@");
+
+            log.warn("The source files contain both CUE-files and regular files, only CUE-files will be processed.");
+
+            return pathMap
+                .entrySet().stream()
+                .filter(this::isCueFileOrDirectory)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        return pathMap;
+    }
+
+    private boolean isCueFileOrDirectory(Map.Entry<Path, BasicFileAttributes> entry) {
+        return entry.getValue().isDirectory()
+               || CUE_EXT.equalsIgnoreCase(FilenameUtils.getExtension(entry.getKey().toString()));
+    }
+
+    private Map<String, Long> getCountOfFilesByExtension(Map<Path, BasicFileAttributes> pathMap) {
+        return pathMap
+            .entrySet().stream()
+            .filter(entry -> entry.getValue().isRegularFile())
+            .map(Map.Entry::getKey)
+            .map(Path::toString)
+            .map(FilenameUtils::getExtension)
+            .map(String::toLowerCase)
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
     private boolean validateParams() {
@@ -180,7 +225,7 @@ public class RecoderService {
         }
 
         String extension = FilenameUtils.getExtension(sourceFilePath.toString());
-        if ("cue".equalsIgnoreCase(extension)) {
+        if (CUE_EXT.equalsIgnoreCase(extension)) {
             return createFuturesForCueFile(sourceFilePath);
         } else {
             return Collections.singletonList(createFutureForOrdinalFile(sourceFilePath, sourceFileTime));
