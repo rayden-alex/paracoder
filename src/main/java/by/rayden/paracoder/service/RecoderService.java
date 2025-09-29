@@ -6,36 +6,23 @@ import by.rayden.paracoder.utils.OutUtils;
 import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.input.BOMInputStream;
-import org.digitalmediaserver.cuelib.CueParser;
-import org.digitalmediaserver.cuelib.CueSheet;
 import org.digitalmediaserver.cuelib.FileData;
-import org.digitalmediaserver.cuelib.Position;
-import org.digitalmediaserver.cuelib.TrackData;
-import org.jetbrains.annotations.VisibleForTesting;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.time.LocalTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -45,7 +32,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -57,30 +43,21 @@ public class RecoderService {
     // https://javascript.info/regexp-greedy-and-lazy#alternative-approach
     public static final Pattern LAST_QUOTED_STRING_PATTERN = Pattern.compile("\"(?<targetFile>[^\"]+?)\"$");
 
-    /**
-     * For the last track, there is no easy way to calculate its end time.
-     * Therefore, we specify a fake value in advance that is greater than the possible real value.
-     */
-    private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
-
-    /**
-     * Extension of CUE-files
-     */
-    private static final String CUE_EXT = "cue";
-
     private final PatternProperties patternProperties;
     private final ProcessRunner processRunner;
     private final RecodeCommand recodeCommand;
     private final OsNative osNative;
+    private final CueHelper cueHelper;
 
     private CommandController.Params paraCoderParams;
 
     public RecoderService(ProcessRunner processRunner, RecodeCommand recodeCommand,
-                          PatternProperties patternProperties, OsNative osNative) {
+                          PatternProperties patternProperties, OsNative osNative, CueHelper cueHelper) {
         this.processRunner = processRunner;
         this.recodeCommand = recodeCommand;
         this.patternProperties = patternProperties;
         this.osNative = osNative;
+        this.cueHelper = cueHelper;
     }
 
     /**
@@ -94,7 +71,7 @@ public class RecoderService {
         }
 
         try {
-            Map<Path, BasicFileAttributes> pathMap = getFilteredPathMap(buildAbsolutePathTree());
+            Map<Path, BasicFileAttributes> pathMap = this.cueHelper.getFilteredPathMap(buildAbsolutePathTree());
 
             int maxExitCode = asyncProcessFiles(pathMap);
             processDirs(pathMap);
@@ -107,45 +84,6 @@ public class RecoderService {
             OutUtils.ansiErr("Error: @|red " + e.getMessage() + "|@");
             return CommandLine.ExitCode.SOFTWARE;
         }
-    }
-
-    /**
-     * If necessary, it returns a filtered list, avoiding ambiguity - whether we want to recode the entire regular file
-     * or split it according to the СUE-file.
-     */
-    @VisibleForTesting
-    Map<Path, BasicFileAttributes> getFilteredPathMap(Map<Path, BasicFileAttributes> pathMap) {
-        Map<String, Long> countOfFilesByExtension = getCountOfFilesByExtension(pathMap);
-        if (countOfFilesByExtension.size() > 1 && countOfFilesByExtension.containsKey(CUE_EXT)) {
-            OutUtils.ansiOut("@|yellow WARNING! The source files contain both CUE-files and regular files.|@");
-            OutUtils.ansiOut("@|yellow This causes ambiguity during processing.|@");
-            OutUtils.ansiOut("@|yellow Therefore, only CUE-files will be processed.|@");
-
-            log.warn("The source files contain both CUE-files and regular files, only CUE-files will be processed.");
-
-            return pathMap
-                .entrySet().stream()
-                .filter(this::isCueFileOrDirectory)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        }
-
-        return pathMap;
-    }
-
-    private boolean isCueFileOrDirectory(Map.Entry<Path, BasicFileAttributes> entry) {
-        return entry.getValue().isDirectory()
-               || CUE_EXT.equalsIgnoreCase(FilenameUtils.getExtension(entry.getKey().toString()));
-    }
-
-    private Map<String, Long> getCountOfFilesByExtension(Map<Path, BasicFileAttributes> pathMap) {
-        return pathMap
-            .entrySet().stream()
-            .filter(entry -> entry.getValue().isRegularFile())
-            .map(Map.Entry::getKey)
-            .map(Path::toString)
-            .map(FilenameUtils::getExtension)
-            .map(String::toLowerCase)
-            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
     private boolean validateParams() {
@@ -225,7 +163,7 @@ public class RecoderService {
         }
 
         String extension = FilenameUtils.getExtension(sourceFilePath.toString());
-        if (CUE_EXT.equalsIgnoreCase(extension)) {
+        if (CueHelper.CUE_EXT.equalsIgnoreCase(extension)) {
             return createFuturesForCueFile(sourceFilePath);
         } else {
             return Collections.singletonList(createFutureForOrdinalFile(sourceFilePath, sourceFileTime));
@@ -234,13 +172,13 @@ public class RecoderService {
 
     private List<CompletableFuture<Integer>> createFuturesForCueFile(Path sourceFilePath) {
         try {
-            var cueSheet = readCueSheet(sourceFilePath);
+            var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
             return cueSheet
                 .getFileData().stream()
                 .map(FileData::getTrackData)
                 .flatMap(Collection::stream)
                 .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // TODO: Do I need this ?
-                .map(trackData -> getCueTrackPayload(trackData, sourceFilePath))
+                .map(trackData -> this.cueHelper.getCueTrackPayload(trackData, sourceFilePath))
                 .map(this::createFutureForCueTrack)
                 .toList();
         } catch (Exception e) {
@@ -259,85 +197,6 @@ public class RecoderService {
             .thenApply(removeToTrashAction(sourceFilePath))
             .whenComplete(oneFileProcessCompleteAction(sourceFilePath))
             .handle(oneFileProcessResultAction());
-    }
-
-    /**
-     * If the source file has a BOM, then the corresponding charset will be used,
-     * otherwise UTF-8 will be used.
-     */
-    @VisibleForTesting
-    CueSheet readCueSheet(Path sourceFilePath) throws IOException {
-        var bomInputStream = BOMInputStream.builder().setPath(sourceFilePath).get();
-        Charset charset = Optional.ofNullable(bomInputStream.getBOM())
-                                  .map(ByteOrderMark::getCharsetName)
-                                  .map(Charset::forName)
-                                  .orElse(StandardCharsets.UTF_8);
-
-        return CueParser.parse(bomInputStream, charset);
-    }
-
-    @SneakyThrows
-    private CueTrackPayload getCueTrackPayload(TrackData trackData, Path sourceFilePath) {
-        var trackInterval = getTrackInterval(trackData);
-
-        // It is assumed that the Audio file is located next to the source CUE file
-        Path audioFilePath = sourceFilePath.resolveSibling(trackData.getParent().getFile());
-        FileTime audioLastModifiedTime = Files.getLastModifiedTime(audioFilePath);
-        CueSheet cueSheet = trackData.getParent().getParent();
-
-        return CueTrackPayload
-            .builder()
-            .trackNumber(trackData.getNumber())
-            .totalTracks(trackData.getParent().getTrackData().size())
-            .title(trackData.getTitle())
-            .performer(trackData.getPerformer() == null ? cueSheet.getPerformer() : trackData.getPerformer())
-            .album(cueSheet.getTitle())
-            .year(cueSheet.getYear() != -1 ? cueSheet.getYear() : null)
-            .genre(cueSheet.getGenre())
-            .comment(cueSheet.getComment())
-            .discId(cueSheet.getDiscId())
-            .discNumber(cueSheet.getDiscNumber()!= -1 ? cueSheet.getDiscNumber() : null)
-            .totalDiscs(cueSheet.getTotalDiscs()!= -1 ? cueSheet.getTotalDiscs() : null)
-            .startTime(trackInterval.start)
-            .endTime(trackInterval.end)
-            .sourceFilePath(sourceFilePath)
-            .audioFilePath(audioFilePath)
-            .audioFileTime(audioLastModifiedTime)
-            .build();
-    }
-
-    private record TrackInterval(LocalTime start, LocalTime end) {
-    }
-
-    private TrackInterval getTrackInterval(TrackData trackData) {
-        Position startPosition = trackData.getStartIndex().getPosition();
-        LocalTime startTime = convertToTime(startPosition); // TODO: Do I need a PreGap processing ?
-
-        LocalTime endTime;
-        if (trackData == trackData.getParent().getTrackData().getLast()) {
-            endTime = END_OF_FILE_TIME; // to the end of file
-        } else {
-            int nextTrackIndex = trackData.getNumber();
-            TrackData nextTrackData = trackData.getParent().getTrackData().get(nextTrackIndex);
-            endTime = convertToTime(nextTrackData.getStartIndex().getPosition());
-        }
-        return new TrackInterval(startTime, endTime);
-    }
-
-    private LocalTime convertToTime(@Nullable Position position) {
-        Objects.requireNonNull(position);
-
-        final int SECONDS_PER_MINUTE = 60;
-        final long NANOS_PER_SECOND = 1000_000_000L;
-        final long NANOS_PER_MINUTE = NANOS_PER_SECOND * SECONDS_PER_MINUTE;
-
-        // CD Audio (Red Book) has 75 frames per second
-        final int FRAMES_PER_SECOND = 75;
-        final long NANOS_PER_FRAME = NANOS_PER_SECOND / FRAMES_PER_SECOND;
-
-        return LocalTime.ofNanoOfDay(position.getMinutes() * NANOS_PER_MINUTE
-            + position.getSeconds() * NANOS_PER_SECOND
-            + position.getFrames() * NANOS_PER_FRAME);
     }
 
     private CompletableFuture<Integer> createFutureForCueTrack(CueTrackPayload trackPayload) {
@@ -380,7 +239,6 @@ public class RecoderService {
             }
         };
     }
-
 
     /**
      * Convert exception to integer exit codes
