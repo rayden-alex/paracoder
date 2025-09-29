@@ -45,4 +45,4 @@ pattern:
       ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:a -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     any: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:a -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:a -map_metadata 0 -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
