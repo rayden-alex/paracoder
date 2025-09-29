@@ -8,7 +8,8 @@
 #  config: logback.xml
 
 spring:
-#  main:
+  main:
+    web-application-type: none
 #    banner-mode: "off"
   output:
     ansi:
@@ -32,7 +33,7 @@ spring:
 
   sql:
     init:
-      enabled: false
+      mode: never
 
   config:
     # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.importing
