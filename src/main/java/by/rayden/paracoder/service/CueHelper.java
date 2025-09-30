@@ -101,8 +101,7 @@ public class CueHelper {
      * or split it according to the СUE-file.
      */
     public Map<Path, BasicFileAttributes> getFilteredPathMap(Map<Path, BasicFileAttributes> pathMap) {
-        Set<String> fileExtensionsSet = getFileExtensionsSet(pathMap);
-        if (fileExtensionsSet.size() > 1 && fileExtensionsSet.contains(CUE_EXT)) {
+        if (hasAmbiguousSetOfFiles(pathMap)) {
             OutUtils.ansiOut("@|yellow WARNING! The source files contain both CUE-files and regular files.|@");
             OutUtils.ansiOut("@|yellow This causes ambiguity during processing.|@");
             OutUtils.ansiOut("@|yellow Therefore, only CUE-files will be processed.|@");
@@ -118,13 +117,8 @@ public class CueHelper {
         return pathMap;
     }
 
-    private boolean isCueFileOrDirectory(Map.Entry<Path, BasicFileAttributes> entry) {
-        return entry.getValue().isDirectory()
-            || CUE_EXT.equalsIgnoreCase(FilenameUtils.getExtension(entry.getKey().toString()));
-    }
-
-    private Set<String> getFileExtensionsSet(Map<Path, BasicFileAttributes> pathMap) {
-        return pathMap
+    private boolean hasAmbiguousSetOfFiles(Map<Path, BasicFileAttributes> pathMap) {
+        Set<String> fileExtensionsSet = pathMap
             .entrySet().stream()
             .filter(entry -> entry.getValue().isRegularFile())
             .map(Map.Entry::getKey)
@@ -132,6 +126,13 @@ public class CueHelper {
             .map(FilenameUtils::getExtension)
             .map(String::toLowerCase)
             .collect(Collectors.toSet());
+
+        return fileExtensionsSet.size() > 1 && fileExtensionsSet.contains(CUE_EXT);
+    }
+
+    private boolean isCueFileOrDirectory(Map.Entry<Path, BasicFileAttributes> entry) {
+        return entry.getValue().isDirectory()
+            || CUE_EXT.equalsIgnoreCase(FilenameUtils.getExtension(entry.getKey().toString()));
     }
 
     private record TrackInterval(LocalTime start, LocalTime end) {
