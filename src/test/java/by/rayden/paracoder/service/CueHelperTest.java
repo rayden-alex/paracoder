@@ -3,10 +3,12 @@ package by.rayden.paracoder.service;
 import org.assertj.core.data.TemporalUnitLessThanOffset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -15,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -60,6 +63,15 @@ class CueHelperTest {
         assertThat(cueSheet.getPerformer()).isEqualTo("Мара");
         assertThat(cueSheet.getAllTrackData()).hasSize(12);
         assertThat(cueSheet.getFileData().getFirst().getFile()).isEqualTo("Мара - 2013 - Почувствуй разницу.opus");
+    }
+
+    @Test
+    void readCueSheet_ShouldThrowException_WhenFileNotExistsTest() {
+        Path sourceFilePath = Paths.get("src/test/resources/FileNotExistName.cue");
+
+        Executable executable = () -> this.cueHelper.readCueSheet(sourceFilePath);
+
+        assertThrows(NoSuchFileException.class, executable);
     }
 
     @Test
