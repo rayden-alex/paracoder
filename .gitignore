@@ -7,3 +7,12 @@ archived/
 # Logs
 log/
 /logback.xml
+
+# AOT-cache
+/paracoder.aot
+/paracoder.aotconf
+
+# Other
+/doc
+/paracoder_native.cmd
+/*.jar_

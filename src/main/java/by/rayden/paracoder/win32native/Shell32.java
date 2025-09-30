@@ -9,6 +9,9 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.StdCallLibrary;
 import com.sun.jna.win32.W32APIOptions;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static com.sun.jna.Structure.FieldOrder;
 
 /**
@@ -84,6 +87,7 @@ interface Shell32 extends StdCallLibrary {
      */
     @FieldOrder({"hwnd", "wFunc", "pFrom", "pTo", "fFlags", "fAnyOperationsAborted", "pNameMappings",
         "lpszProgressTitle"})
+//    @FieldOrder({fAnyOperationsAborted, fFlags, hwnd, lpszProgressTitle, pFrom, pNameMappings, pTo, wFunc})
     class SHFILEOPSTRUCT extends Structure {
         /**
          * A window handle to the dialog box to display information about
@@ -123,6 +127,11 @@ interface Shell32 extends StdCallLibrary {
          * A pointer to the title of a progress dialog box. This is a null-terminated string.
          */
         public String lpszProgressTitle;
+
+//        @Override
+//        protected List<String> getFieldOrder() {
+//            return Arrays.asList("fAnyOperationsAborted", "fFlags", "hwnd", "lpszProgressTitle", "pFrom", "pNameMappings", "pTo", "wFunc");
+//        }
 
         /**
          * Use this to encode <code>pFrom/pTo</code> paths.

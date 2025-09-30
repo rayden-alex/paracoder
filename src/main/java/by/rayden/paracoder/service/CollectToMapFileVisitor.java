@@ -1,6 +1,7 @@
 package by.rayden.paracoder.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.lang.Nullable;
 
 import java.io.IOException;
@@ -34,18 +35,19 @@ public class CollectToMapFileVisitor extends SimpleFileVisitor<Path> {
 
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-        getExtension(file.getFileName().toString().toLowerCase())
-            .filter(this.extensions::contains)
-            .ifPresent(_ -> {
-                Path fileAbsolutePath = file.toAbsolutePath();
-                this.pathTree.put(fileAbsolutePath, attrs);
+        Optional.of(file.getFileName().toString().toLowerCase())
+                .map(FilenameUtils::getExtension)
+                .filter(this.extensions::contains)
+                .ifPresent(_ -> {
+                    Path fileAbsolutePath = file.toAbsolutePath();
+                    this.pathTree.put(fileAbsolutePath, attrs);
 
-                // In case when program argument is a file(s) (not a dir)
-                // then manually add the parent dir to the pathTree.
-                this.pathTree.computeIfAbsent(fileAbsolutePath.getParent(), this::getFileAttributes);
+                    // In case when program argument is a file(s) (not a dir)
+                    // then manually add the parent dir to the pathTree.
+                    this.pathTree.computeIfAbsent(fileAbsolutePath.getParent(), this::getFileAttributes);
 
-                this.isAtLeastOneFileInDirAdded = true;
-            });
+                    this.isAtLeastOneFileInDirAdded = true;
+                });
 
         return FileVisitResult.CONTINUE;
     }
@@ -69,15 +71,13 @@ public class CollectToMapFileVisitor extends SimpleFileVisitor<Path> {
         return FileVisitResult.CONTINUE;
     }
 
-    public Optional<String> getExtension(String filename) {
-        return Optional.of(filename).filter(f -> f.contains("."))
-                       .map(f -> f.substring(filename.lastIndexOf(".") + 1));
-    }
-
     private BasicFileAttributes getFileAttributes(Path path) {
         try {
             BasicFileAttributes fileAttributes = Files.readAttributes(path, BasicFileAttributes.class);
-            log.debug("path:{}, time:{}", path, fileAttributes.lastModifiedTime().toString());
+            log.atDebug().setMessage("path:{}, time:{}")
+               .addArgument(path)
+               .addArgument(() -> fileAttributes.lastModifiedTime().toString())
+               .log();
             return fileAttributes;
         } catch (IOException e) {
             log.error("Error reading attributes: {}", path, e);

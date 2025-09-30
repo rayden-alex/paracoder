@@ -6,7 +6,6 @@ import com.sun.jna.WString;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -39,7 +38,7 @@ public class ProcessRunner {
     private int exec(String recodeCommand, Path sourceFilePath) {
         log.debug("Recode command: {}", recodeCommand);
         String threadName = Thread.currentThread().getName();
-        OutUtils.ansiOut(STR."Processing source file: @|yellow \{threadName}|@ @|blue \{sourceFilePath}|@");
+        OutUtils.ansiOut("Processing: @|yellow " + threadName + "|@ @|blue " + sourceFilePath + "|@");
 
         try {
             Process lastProcess = runProcessWithRedirect(recodeCommand);
@@ -49,7 +48,7 @@ public class ProcessRunner {
                 return lastProcess.exitValue();
             } else {
                 log.error("Waiting time for recode command has expired: {}", recodeCommand);
-                throw new RuntimeException(STR."Waiting time for recode command has expired: \{recodeCommand}");
+                throw new RuntimeException("Waiting time for recode command has expired: " + recodeCommand);
             }
         } catch (IOException | InterruptedException e) {
             log.error("Recode command error: {}", recodeCommand, e);
@@ -62,7 +61,11 @@ public class ProcessRunner {
     }
 
     @VisibleForTesting
-    Process runProcess(String recodeCommand, boolean useRedirects) throws IOException {
+    Process runProcessWithoutRedirect(String recodeCommand) throws IOException {
+        return runProcess(recodeCommand, false);
+    }
+
+    private Process runProcess(String recodeCommand, boolean useRedirects) throws IOException {
         List<ProcessBuilder> builders = makeProcessBuilders(recodeCommand);
         if (useRedirects) {
             applyRedirects(builders);
@@ -74,7 +77,6 @@ public class ProcessRunner {
     /**
      * A recodeCommand can have just one command/process to run as well.
      */
-    @NonNull
     private List<ProcessBuilder> makeProcessBuilders(String recodeCommand) {
         return Arrays.stream(recodeCommand.split("\\|"))
                      .map(String::trim)

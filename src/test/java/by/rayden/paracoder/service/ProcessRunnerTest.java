@@ -2,13 +2,12 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -17,12 +16,10 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-// TODO: Finish tests
-@ExtendWith(MockitoExtension.class)
 class ProcessRunnerTest {
 
     private static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
-    private static final Charset PROCESS_CHARSET = Charset.forName("cp866");
+    private static final Charset PROCESS_CHARSET = StandardCharsets.UTF_8;
 
     @Test
     void testShowArgs() throws Exception {
@@ -33,6 +30,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
         assertThat(res.out).isNotEmpty();
 
@@ -50,6 +48,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).as("Command error stream:").isEmpty();
         assertThat(res.out).isNotEmpty();
 
@@ -68,6 +67,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
         assertThat(res.out).isNotEmpty();
 
@@ -88,6 +88,7 @@ class ProcessRunnerTest {
 
         ProcessResult res = execCapturedProcess(commands);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
         assertThat(res.out).isNotEmpty();
     }
@@ -97,12 +98,13 @@ class ProcessRunnerTest {
         List<String> commands = List.of(
             "cmd.exe",
             "/c",
-            "waitfor.exe /T 3 qqqqqqq");
+            "chcp 65001>nul && waitfor.exe /T 1 qqqqqqq");
 
         ProcessResult res = execCapturedProcess(commands);
 
-        assertThat(res.err).isNotEmpty();
+        assertThat(res.exitCode).isNotZero();
         assertThat(res.out).isEmpty();
+        assertThat(res.err).isEqualTo("ERROR: Timed out waiting for 'qqqqqqq'.\r\n");
     }
 
     @Test
@@ -111,9 +113,10 @@ class ProcessRunnerTest {
         OsNative osNative = new OsNativeWindowsImpl();
         ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
 
-        Process process = processRunner.runProcess("src\\test\\resources\\ShowArgs.exe p1 p2", false);
+        Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 p2");
         ProcessResult res = execCapturedProcess(process);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
 
         List<String> args = getArgs(res.out);
@@ -129,10 +132,11 @@ class ProcessRunnerTest {
         OsNative osNative = new OsNativeWindowsImpl();
         ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
 
-        Process process = processRunner.runProcess("src\\test\\resources\\ShowArgs.exe p1 \"p2 3\" | more.com /C",
-            false);
+        Process process = processRunner
+            .runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \"p2 3\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
 
         List<String> args = getArgs(res.out);
@@ -147,23 +151,23 @@ class ProcessRunnerTest {
         RecoderThreadPool recoderThreadPool = mock(RecoderThreadPool.class);
         OsNative osNative = new OsNativeWindowsImpl();
         ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
+        String unicodeFileName = "ბენდი sløwed L‘ÂME фыва 💃🕺🎼.flac";
 
-        Process process = processRunner.runProcess("src\\test\\resources\\ShowArgs.exe p1 ნიკოს | more.com /C",
-            false);
+        Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \""
+            + unicodeFileName + "\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
+        assertThat(res.exitCode).isZero();
         assertThat(res.err).isEmpty();
 
         List<String> args = getArgs(res.out);
         assertThat(args).hasSize(3);
         assertThat(args.get(0)).endsWith("ShowArgs.exe");
         assertThat(args.get(1)).isEqualTo("p1");
-        assertThat(args.get(2)).isEqualTo("ნიკოს");
+        assertThat(args.get(2)).isEqualTo(unicodeFileName);
     }
 
-
     private record ProcessResult(int exitCode, String out, String err) {
-
     }
 
     private ProcessResult execCapturedProcess(String... commands) throws Exception {
@@ -189,16 +193,13 @@ class ProcessRunnerTest {
         return new ProcessResult(exitCode, outStr, errorStr);
     }
 
+    @SneakyThrows
     private String readToString(InputStream stream) {
-        try {
-            return new String(stream.readAllBytes(), PROCESS_CHARSET);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return new String(stream.readAllBytes(), PROCESS_CHARSET);
     }
 
     /**
-     * Extracts program arguments from output like this:
+     * Extracts program arguments from ShowArgs.exe output like this:
      * <pre> {@code
      * argc: 3
      * argv[0]: >src\test\resources\ShowArgs.exe<
@@ -207,6 +208,10 @@ class ProcessRunnerTest {
      * }</pre>
      */
     private List<String> getArgs(String output) {
-        return SHOW_ARGS_REGEX.matcher(output).results().map(matchResult -> matchResult.group(1)).toList();
+        return SHOW_ARGS_REGEX
+            .matcher(output)
+            .results()
+            .map(matchResult -> matchResult.group(1))
+            .toList();
     }
 }

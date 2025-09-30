@@ -1,6 +1,15 @@
 defaults:
   # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.property-placeholders
+
   bitrate: "192"
+  # https://wiki.hydrogenaud.io/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
+  # The following function gives you a weight w for each cc, where cc is the channel configuration written as a decimal number (1.0 for mono, 2.0 for stereo, 5.1 for surround, etc.):
+  # w(cc) = cc^0.75
+  # For 5.1 multichannel audio equivalent bitrate is 192 * w(5.1)/w(2.0) = 192 * (5.1/2.0)^0.75 = 387 kbps (~384 kbps)
+
+  ffmpeg: "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
+  opus: "\"c:\\Rip\\opus-tools\\opusenc.exe\" --quiet --music --vbr"
+
 
 pattern:
   fileExtensions:
@@ -9,11 +18,31 @@ pattern:
     - wav
     - ape
     - dts
+    - wv
+    - w64 
+    - aiff
+    - cue
+
 
   commandTemplate:
     flac: >-
-      "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
+      ${defaults.opus} --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
     wav: >-
-      "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
+      ${defaults.opus} --bitrate ${defaults.bitrate:192} "{{F}}" "{{D}}{{P}}{{N}}.opus"
+
+    # FFMPEG can't write attached pictures into OPUS. Therefore, we can try to extract it to external file.
+    # -f lavfi -i nullsrc=s=128x128  --- Creates an additional dummy video stream
+    # -map 0:v?  --- Use first input video stream if exists. When this stream is not exists then second dummy video stream will be used.
+    # -c:v png -update 1 -frames:v 1 -y   --- Extract video stream to file using PNG codec. Update file on every new frame. Use only first frame. Overwrite file if it already exists.
+    #      ${defaults.ffmpeg} -i "{{F}}" -f lavfi -i nullsrc=s=128x128 -map 0:v? -c:v png -update 1 -frames:v 1 -y "{{D}}{{P}}Cover_ffmpeg.png" -map 0:a -c:a copy -map_metadata 0:s:0 -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+    cue_opus: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c:a copy -map_metadata 0:s:a -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
+    cue_mp3: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c copy -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_ARTIST}} - {{CUE_TITLE}}.mp3"
+
+    cue_any: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:a -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
     any: >-
-      "c:\Rip\ffmpeg\bin\ffmpeg.exe" -hide_banner -loglevel error -nostats -nostdin -i "{{F}}" -c:v copy -c:a flac -f flac - | "c:\Rip\opus-tools\opusenc.exe" --quiet --music --vbr --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:a -map_metadata 0 -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"

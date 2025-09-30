@@ -1,107 +1,166 @@
-import java.text.SimpleDateFormat
-
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.2.2'
-	id 'io.spring.dependency-management' version '1.1.4'
-//	id 'org.graalvm.buildtools.native' version '0.9.28'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.6'
+    id 'io.freefair.lombok' version '9.0.0'
+    id 'me.qoomon.git-versioning' version '6.4.4'
+
+    // Generating a git.properties file containing information about the state of your git source code repository when the project was built
+    // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
+    // https://github.com/n0mer/gradle-git-properties
+    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
 }
 
+apply plugin: 'io.spring.dependency-management'
+
 group = 'by.rayden'
-version = '1.0.3'
+version = '0.0.0'
+gitVersioning.apply {
+// https://github.com/qoomon/gradle-git-versioning-plugin
+    describeTagPattern = 'v.+'
+    refs {
+        considerTagsOnBranches = true
+        branch('master') {
+            version = '${describe.tag.version}-${commit.short}'
+            properties_["appExtProperty"] = '${commit.timestamp.year}-${commit.timestamp.month}-${commit.timestamp.day} ${commit.timestamp.hour}:${commit.timestamp.minute}:${commit.timestamp.second}'
+        }
+
+        branch('(?<branch>.+)') {
+            version = '${describe.tag.version}-${ref.branch.slug}-${commit.short}'
+            properties_["appExtProperty"] = '${commit.timestamp.year}-${commit.timestamp.month}-${commit.timestamp.day} ${commit.timestamp.hour}:${commit.timestamp.minute}:${commit.timestamp.second}'
+        }
+    }
+
+    rev {
+        version = "\${commit.short}"
+    }
+}
+
+gitProperties {
+    extProperty = 'gitProps' // git properties will be put in a map at project.ext.gitProps
+
+    // fine-grained control of the content of git.properties
+    keys = [
+            'git.branch',
+            'git.build.version',
+            'git.closest.tag.commit.count',
+            'git.closest.tag.name',
+            'git.commit.id',
+            'git.commit.id.abbrev',
+            'git.commit.id.describe',
+            'git.commit.time',
+            'git.dirty',
+            'git.tags',
+            'git.total.commit.count'
+    ]
+}
+generateGitProperties.outputs.upToDateWhen { false } // make sure the generateGitProperties task always executes (even when git.properties is not changed)
+
+
+bootJar {
+    // Locking the file name to avoid changing it every time in cmd-scripts
+    archiveFileName = 'ParaCoder.jar'
+
+    // a script variable to capture the result of using project.ext to calculate the actual parameter
+    // https://docs.gradle.org/8.12.1/userguide/configuration_cache.html#config_cache:requirements:use_project_during_execution
+    def my_project_ext = project.ext
+
+    manifest {
+        // Filling the manifest attribute using the git property.
+        attributes 'Build-Revision': "${-> my_project_ext.gitProps['git.commit.id.abbrev']}" // Use GString lazy evaluation to delay until git properties are populated
+        attributes 'Enable-Native-Access': 'ALL-UNNAMED'
+    }
+}
+
+springBoot {
+    // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-info
+    // https://docs.spring.io/spring-boot/docs/3.2.3/gradle-plugin/reference/htmlsingle/#integrating-with-actuator.build-info
+    // This will configure a BuildInfo task named bootBuildInfo.
+    // A BuildInfo task is provided to generate " "build/resources/main/META-INF/build-info.properties"
+    buildInfo()
+}
 
 java {
-	sourceCompatibility = '21'
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-
-	byteBuddyAgent
+    mockitoAgent
 }
 
 configurations.configureEach {
 //	https://gradlehero.com/how-to-exclude-gradle-dependencies/
-	exclude group: 'io.micrometer'
-}
-
-repositories {
-	mavenCentral()
+    exclude group: 'io.micrometer'
 }
 
 dependencies {
-	//to get rid of "unknown enum constant javax.annotation.meta.When.MAYBE" warning
-    //compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-	compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.0'
-	compileOnly 'org.jetbrains:annotations:24.0.1'
+    compileOnly 'org.jetbrains:annotations:26.0.2-1'
 
-	implementation 'net.java.dev.jna:jna:5.13.0'
+    implementation 'net.java.dev.jna:jna:5.18.0'
 
-	implementation 'info.picocli:picocli-spring-boot-starter:4.7.5'
-	implementation 'info.picocli:picocli-jansi-graalvm:1.2.0'
-	implementation 'commons-io:commons-io:2.11.0'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation 'info.picocli:picocli-spring-boot-starter:4.7.7'
+    implementation 'org.fusesource.jansi:jansi:2.4.2'
 
-	byteBuddyAgent "net.bytebuddy:byte-buddy-agent"
+    implementation 'commons-io:commons-io:2.20.0'
+    implementation 'org.digitalmediaserver:cuelib-core:2.0.0'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.mockito:mockito-core:5.20.0'
+    mockitoAgent('org.mockito:mockito-core:5.20.0') {
+        transitive = false
+    }
 }
 
-tasks.withType(JavaCompile).configureEach {
-	options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
-
-	//Enable JDK21 preview features, see https://docs.gradle.org/current/userguide/building_java_projects.html#sec:feature_preview
-	options.compilerArgs += "--enable-preview"
-
-	// https://gist.github.com/rponte/d660919434d094bbd35a1aabf7ef1bf0
-	// Although Spring Boot Gradle Plugin configures any JavaCompile tasks with no configured encoding to use UTF-8.
-	// https://docs.spring.io/spring-boot/docs/3.2.2/gradle-plugin/reference/htmlsingle/#reacting-to-other-plugins.java
-	options.encoding = "UTF-8"
+lombok {
+    version = '1.18.42'
 }
+
+
+// See https://docs.spring.io/spring-boot/gradle-plugin/reacting.html  point 11.
+// Spring Boot plugin already Configures any JavaCompile tasks with no configured encoding to use UTF-8.
+//tasks.withType(JavaCompile).configureEach {
+//    // https://gist.github.com/rponte/d660919434d094bbd35a1aabf7ef1bf0
+//    // https://docs.spring.io/spring-boot/docs/3.2.2/gradle-plugin/reference/htmlsingle/#reacting-to-other-plugins.java
+//    options.encoding = "UTF-8"
+//}
 
 tasks.withType(Test).configureEach {
-	jvmArgs += "--enable-preview"
-
-	// To get rid of "WARNING: A Java agent has been loaded dynamically ... byte-buddy-agent..."
-	// https://github.com/raphw/byte-buddy/discussions/1535
-	jvmArgs += "-javaagent:${configurations.byteBuddyAgent.singleFile}"
-	defaultCharacterEncoding = "UTF-8"
-}
-
-tasks.withType(JavaExec).configureEach {
-	jvmArgs += "--enable-preview"
+    defaultCharacterEncoding = "UTF-8"
 }
 
 tasks.withType(Javadoc).configureEach {
-	options.encoding = "UTF-8"
+    options.encoding = "UTF-8"
 }
 
-def generatedResources = "$buildDir/generated-resources/main"
-sourceSets {
-	main {
-		//Register an output folder on the main SourceSet:
-		output.dir(generatedResources, builtBy: 'generateVersionTxt')
-		//It is now a part of the 'main' classpath and will be a part of the jar
-	}
-}
-
-//A task that generates the "version.txt" resources:
-tasks.register('generateVersionTxt') {
-	description 'Creates a version.txt file with build info that is added to the root of the jar'
-	doLast {
-		new File(generatedResources).mkdirs()
-		def generated = new File(generatedResources, "version.txt")
-		generated.text = """
-Version: $rootProject.version
-Buildtime: ${new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())}
-Application-name: $rootProject.name
-"""
-	}
+tasks.register('versionDebug') {
+    def my_project = project
+    doLast {
+        println(my_project.version)
+        println(my_project.property("appExtProperty"))
+        println(my_project.property("git.commit"))
+        println(my_project.property("git.commit.timestamp.datetime"))
+        println(my_project.property("git.ref"))
+    }
 }
 
 test {
-	useJUnitPlatform()
+    useJUnitPlatform()
+
+    // to suppress WARNING like this:
+    // "A Java agent has been loaded dynamically...  byte-buddy-agent...",
+    // "OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes
+    // because bootstrap classpath has been appended"
+    jvmArgs += '--enable-native-access=ALL-UNNAMED'
+    jvmArgs += '-Xshare:off'
+    jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
+
+    // To show passed test in console output
+//    testLogging {
+//        events "passed", "skipped", "failed" // , "standardOut", "standardError"
+//    }
 }

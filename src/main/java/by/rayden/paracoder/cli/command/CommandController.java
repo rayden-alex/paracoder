@@ -18,18 +18,21 @@ import java.util.concurrent.Callable;
 @Command(name = "paracoder",
     versionProvider = PropertiesVersionProvider.class,
     mixinStandardHelpOptions = true,
-    header = "ParaCoder CLI",
-    description = """
-        This is a ParaCoder application
-        to recode lossless audio files to another format using multiple threads.""",
+    header = "",
+    description = CommandController.APP_DESCRIPTION,
     parameterListHeading = "%nParameters:%n",
     optionListHeading    = "%nOptions:%n",
     showDefaultValues = true,
-    usageHelpAutoWidth = false,
     usageHelpWidth = 120,
-    defaultValueProvider = CommandLine.PropertiesDefaultProvider.class,
-    subcommands = Sub.class)
+    defaultValueProvider = CommandLine.PropertiesDefaultProvider.class
+)
 public class CommandController implements Callable<Integer> {
+    static final String APP_DESCRIPTION = """
+        
+        ParaCoder CLI:
+        This is a ParaCoder application
+        to recode lossless audio files to different format using multiple threads.""";
+
     private final RecoderService recoderService;
 
     @Option(names = {"-pf", "--preserve-file-timestamp"},
@@ -67,22 +70,12 @@ public class CommandController implements Callable<Integer> {
     }
 
     public List<Path> getInputPathList() {
-        return Collections.unmodifiableList(this.inputPathList);
+        return this.inputPathList == null ? Collections.emptyList() : Collections.unmodifiableList(this.inputPathList);
     }
 
     @Override
     public Integer call() {
-//        System.out.println("picocli.defaults.paracoder.path="
-//            + System.getProperty("picocli.defaults.paracoder.path"));
-//
-//        System.out.println("picocli.usage.width="
-//            + System.getProperty("picocli.usage.width"));
-
-        if (this.inputPathList == null || this.inputPathList.isEmpty()) {
-            return CommandLine.ExitCode.USAGE;
-        }
-
-        var paraCoderParams = new Params(this.inputPathList, this.preserveFileTimestamp, this.preserveDirTimestamp,
+        var paraCoderParams = new Params(getInputPathList(), this.preserveFileTimestamp, this.preserveDirTimestamp,
             this.recurse, this.deleteSourceFilesToTrash);
 
         return this.recoderService.recode(paraCoderParams);

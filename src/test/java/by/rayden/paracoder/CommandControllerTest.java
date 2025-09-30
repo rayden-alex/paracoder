@@ -1,23 +1,18 @@
 package by.rayden.paracoder;
 
 import by.rayden.paracoder.cli.command.CommandController;
-import by.rayden.paracoder.cli.command.Sub;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import picocli.CommandLine;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
-import static picocli.CommandLine.Help;
-import static picocli.CommandLine.IFactory;
-import static picocli.CommandLine.ParseResult;
+import java.util.List;
 
-@SpringBootTest(webEnvironment = NONE, classes = ParallelCoderApplication.class)
-@Disabled
+import static org.assertj.core.api.Assertions.assertThat;
+import static picocli.CommandLine.IFactory;
+
+@SpringBootTest(args = {"--help"})
 public class CommandControllerTest {
     @Autowired
     private IFactory cliFactory;
@@ -26,34 +21,26 @@ public class CommandControllerTest {
     private CommandController commandController;
 
     @Test
+    @Disabled
     public void testParsingCommandLineArgs() {
-        ParseResult parseResult = new CommandLine(this.commandController, this.cliFactory)
-            .parseArgs("-x", "abc", "sub", "-y", "123");
+        int exitCode = new CommandLine(this.commandController, this.cliFactory)
+            .execute("-dr c:\\temp");
 
-//        assertEquals("abc", this.paraCoderMainCommand.x);
-        assertNull(this.commandController.getInputPathList());
-
-        assertTrue(parseResult.hasSubcommand());
-        ParseResult subResult = parseResult.subcommand();
-        Sub sub = (Sub) subResult.commandSpec().userObject();
-
-        assertEquals("123", sub.y);
-        assertNull(sub.positionals);
+        assertThat(exitCode).isZero();
+        assertThat(this.commandController.getInputPathList()).isEmpty();
+        assertThat(this.commandController.isRecurse()).isTrue();
+        assertThat(this.commandController.isDeleteSourceFilesToTrash()).isTrue();
     }
 
     @Test
     public void testUsageHelp() {
-        String expected = String.format(
-            "Usage: paracoder [-hV] [-x=<x>] [<positionals>...] [COMMAND]%n" +
-            "      [<positionals>...]   positional params%n" +
-            "  -h, --help               Show this help message and exit.%n" +
-            "  -V, --version            Print version information and exit.%n" +
-            "  -x=<x>                   optional option%n" +
-            "Commands:%n" +
-            "  sub%n");
+        String actual =
+            new CommandLine(this.commandController, this.cliFactory).getUsageMessage(CommandLine.Help.Ansi.OFF);
 
-        String actual = new CommandLine(this.commandController, this.cliFactory)
-            .getUsageMessage(Help.Ansi.AUTO);
-        assertEquals(expected, actual);
+        assertThat(actual).contains(
+            List.of("Usage: paracoder [-dhrV] [-pd] [-pf] [-t=<threadCount>] [<inputPathList>...]",
+                "This is a ParaCoder application",
+                "-h, --help                 Show this help message and exit",
+                "-V, --version              Print version information and exit"));
     }
 }

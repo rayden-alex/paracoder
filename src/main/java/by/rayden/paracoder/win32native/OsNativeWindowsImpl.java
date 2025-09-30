@@ -6,8 +6,8 @@ import com.sun.jna.ptr.IntByReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 @Slf4j
@@ -48,18 +48,18 @@ public class OsNativeWindowsImpl implements OsNative {
     }
 
     @Override
-    public void deleteToTrash(File... files) throws IOException {
+    public void deleteToTrash(Path... paths) throws IOException {
         Shell32.SHFILEOPSTRUCT fileOp = new Shell32.SHFILEOPSTRUCT();
         fileOp.wFunc = Shell32.FO_DELETE;
         fileOp.fFlags = Shell32.FOF_ALLOWUNDO | Shell32.FOF_NO_UI;
 
-        String[] paths = new String[files.length];
-        Arrays.setAll(paths, i -> files[i].getAbsolutePath());
-        fileOp.pFrom = fileOp.encodePaths(paths);
+        String[] absPaths = new String[paths.length];
+        Arrays.setAll(absPaths, i -> paths[i].toAbsolutePath().toString());
+        fileOp.pFrom = fileOp.encodePaths(absPaths);
 
         int ret = Shell32.INSTANCE.SHFileOperation(fileOp);
         if (ret != 0) {
-            throw new IOException(STR."Error on deleting source file to the trash: \{fileOp.pFrom}. ErrorCode=\{ret}");
+            throw new IOException("Error on deleting source file to the trash: " + fileOp.pFrom + ". ErrorCode=" + ret);
         }
         if (fileOp.fAnyOperationsAborted) {
             throw new IOException("Move to trash aborted");
