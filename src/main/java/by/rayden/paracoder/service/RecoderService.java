@@ -113,6 +113,9 @@ public class RecoderService {
     private int asyncProcessFiles(Map<Path, BasicFileAttributes> pathMap) throws InterruptedException,
         ExecutionException, TimeoutException {
 
+//        CompletableFuture<List<CompletableFuture<Integer>>> async = CompletableFuture.supplyAsync(() -> processFiles(pathMap));
+//        List<CompletableFuture<Integer>> futures = async.join();
+
         List<CompletableFuture<Integer>> futures = processFiles(pathMap);
 
         // Waiting for all processes to complete
@@ -134,6 +137,8 @@ public class RecoderService {
                       .sorted(Map.Entry.comparingByKey())
                       .map(this::processFile)
                       .flatMap(Collection::stream)
+                      .map(f -> f.whenComplete(oneFileProcessCompleteAction(Path.of(""))))
+                      .map(f -> f.handle(oneFileProcessResultAction()))
                       .toList();
     }
 
@@ -172,12 +177,18 @@ public class RecoderService {
 
     private List<CompletableFuture<Integer>> createFuturesForCueFile(Path sourceFilePath) {
         try {
+            OutUtils.ansiOut("Parsing CUE file: @|blue " + sourceFilePath + "|@");
             var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
+            this.cueHelper.showCueParsingMessages(cueSheet);
+            log.info(cueSheet.toString());
+
+            this.cueHelper.validateCueParseResult(cueSheet);
+
             return cueSheet
                 .getFileData().stream()
                 .map(FileData::getTrackData)
                 .flatMap(Collection::stream)
-                .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // TODO: Do I need this ?
+                .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType()))
                 .map(trackData -> this.cueHelper.getCueTrackPayload(trackData, sourceFilePath))
                 .map(this::createFutureForCueTrack)
                 .toList();
@@ -230,13 +241,20 @@ public class RecoderService {
 
     private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
         return (exitCode, t) -> {
-            if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
-                log.info("Completed OK {}", sourceFilePath);
-                OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
-            } else {
+            if (t != null) {
                 log.error("Error on processing source file: {}", sourceFilePath, t);
-                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + "|@");
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + ". " + t.getMessage() + "|@");
+                return;
             }
+
+            if (exitCode != CommandLine.ExitCode.OK) {
+                log.error("Error on processing source file: {}. Exit code={}", sourceFilePath, exitCode);
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + ". Exit code=" + exitCode + "|@");
+                return;
+            }
+
+            log.info("Completed OK {}", sourceFilePath);
+            OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
         };
     }
 
