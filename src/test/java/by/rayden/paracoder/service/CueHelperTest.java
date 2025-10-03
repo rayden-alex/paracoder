@@ -56,7 +56,7 @@ class CueHelperTest {
 
     @Test
     void readCueSheetTest() throws Exception {
-        Path sourceFilePath = Paths.get("src/test/resources/CyrillicUTF8.cue");
+        Path sourceFilePath = Paths.get("src/test/resources/cue/CyrillicUTF8.cue");
         var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
 
         assertThat(cueSheet.getGenre()).isEqualTo("Pop Rock");
@@ -66,8 +66,19 @@ class CueHelperTest {
     }
 
     @Test
-    void readCueSheet_ShouldThrowException_WhenFileNotExistsTest() {
-        Path sourceFilePath = Paths.get("src/test/resources/FileNotExistName.cue");
+    void validateCueParseResult_ShouldThrowException_WhenWrongCueFormatFile() throws Exception {
+        Path sourceFilePath = Paths.get("src/test/resources/cue/Stars In Stereo - Stars In Stereo.cue");
+        var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
+
+        Executable executable = () -> this.cueHelper.validateCueParseResult(cueSheet);
+
+        var e = assertThrows(RuntimeException.class, executable);
+        assertThat(e.getMessage()).isEqualTo("The source CUE file has an invalid format.");
+    }
+
+    @Test
+    void readCueSheet_ShouldThrowException_WhenFileNotExists() {
+        Path sourceFilePath = Paths.get("src/test/resources/cue/FileNotExistName.cue");
 
         Executable executable = () -> this.cueHelper.readCueSheet(sourceFilePath);
 
@@ -76,7 +87,7 @@ class CueHelperTest {
 
     @Test
     void getCueTrackPayloadTest() throws IOException {
-        Path sourceFilePath = Paths.get("src/test/resources/CyrillicUTF8.cue");
+        Path sourceFilePath = Paths.get("src/test/resources/cue/CyrillicUTF8.cue");
         var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
         var trackData = cueSheet.getFileData().getFirst().getTrackData().get(1); //Second track
 
