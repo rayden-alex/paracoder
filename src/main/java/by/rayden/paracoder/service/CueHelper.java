@@ -8,8 +8,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.digitalmediaserver.cuelib.CueParser;
 import org.digitalmediaserver.cuelib.CueSheet;
+import org.digitalmediaserver.cuelib.Error;
+import org.digitalmediaserver.cuelib.FileData;
+import org.digitalmediaserver.cuelib.Message;
 import org.digitalmediaserver.cuelib.Position;
 import org.digitalmediaserver.cuelib.TrackData;
+import org.digitalmediaserver.cuelib.Warning;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -21,10 +25,12 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
@@ -52,12 +58,18 @@ public class CueHelper {
      */
     private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
 
+    private static final Map<Path, FileTime> LAST_MODIFIED_TIME_CACHE = new ConcurrentHashMap<>();
+
     /**
      * If the source file has a BOM, then the corresponding charset will be used,
      * otherwise UTF-8 will be used.
      */
     public CueSheet readCueSheet(Path sourceFilePath) throws IOException {
-        var bomInputStream = BOMInputStream.builder().setPath(sourceFilePath).get();
+        ByteOrderMark[] detectBOMs = {ByteOrderMark.UTF_8,
+            ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE,
+            ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE};
+
+        var bomInputStream = BOMInputStream.builder().setPath(sourceFilePath).setByteOrderMarks(detectBOMs).get();
         Charset charset = Optional.ofNullable(bomInputStream.getBOM())
                                   .map(ByteOrderMark::getCharsetName)
                                   .map(Charset::forName)
@@ -72,7 +84,7 @@ public class CueHelper {
 
         // It is assumed that the Audio file is located next to the source CUE file
         Path audioFilePath = sourceFilePath.resolveSibling(trackData.getParent().getFile());
-        FileTime audioLastModifiedTime = Files.getLastModifiedTime(audioFilePath);
+        FileTime audioLastModifiedTime = getCachedLastModifiedTime(audioFilePath);
         CueSheet cueSheet = trackData.getParent().getParent();
 
         return CueTrackPayload
@@ -94,6 +106,20 @@ public class CueHelper {
             .audioFilePath(audioFilePath)
             .audioFileTime(audioLastModifiedTime)
             .build();
+    }
+
+    /**
+     * A CUE-file most often contains only one audio file.
+     * Therefore, it makes sense to cache its last modification time.
+     */
+    private FileTime getCachedLastModifiedTime(Path audioFilePath) {
+        return LAST_MODIFIED_TIME_CACHE.computeIfAbsent(audioFilePath, path -> {
+            try {
+                return Files.getLastModifiedTime(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
@@ -133,6 +159,30 @@ public class CueHelper {
     private boolean isCueFileOrDirectory(Map.Entry<Path, BasicFileAttributes> entry) {
         return entry.getValue().isDirectory()
             || CUE_EXT.equalsIgnoreCase(FilenameUtils.getExtension(entry.getKey().toString()));
+    }
+
+    public void validateCueParseResult(CueSheet cueSheet) {
+        List<FileData> audioFileDataList = cueSheet.getFileData();
+        if (audioFileDataList.isEmpty() || hasEmptyAudioFiles(audioFileDataList)) {
+            throw new RuntimeException("The source CUE file has an invalid format.");
+        }
+    }
+
+    private boolean hasEmptyAudioFiles(List<FileData> audioFileDataList) {
+        return audioFileDataList.stream().map(FileData::getFile).anyMatch(Objects::isNull);
+    }
+
+    public void showCueParsingMessages(CueSheet cueSheet) {
+        cueSheet.getMessages().forEach(this::showCueParsingMessage);
+    }
+
+    private void showCueParsingMessage(Message message) {
+        switch (message) {
+            case Error m -> OutUtils.ansiErr(" @|red " + m + "|@");
+            case Warning m -> OutUtils.ansiOut(" @|bold,yellow " + m + "|@");
+
+            default -> System.out.println(message);
+        }
     }
 
     private record TrackInterval(LocalTime start, LocalTime end) {

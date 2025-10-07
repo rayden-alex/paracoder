@@ -134,6 +134,7 @@ public class RecoderService {
                       .sorted(Map.Entry.comparingByKey())
                       .map(this::processFile)
                       .flatMap(Collection::stream)
+                      .map(this::handleUnhandledExceptions)
                       .toList();
     }
 
@@ -172,12 +173,18 @@ public class RecoderService {
 
     private List<CompletableFuture<Integer>> createFuturesForCueFile(Path sourceFilePath) {
         try {
+            OutUtils.ansiOut("Parsing CUE file: @|blue " + sourceFilePath + "|@");
             var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
+            this.cueHelper.showCueParsingMessages(cueSheet);
+            log.info(cueSheet.toString());
+
+            this.cueHelper.validateCueParseResult(cueSheet);
+
             return cueSheet
                 .getFileData().stream()
                 .map(FileData::getTrackData)
                 .flatMap(Collection::stream)
-                .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType())) // TODO: Do I need this ?
+                .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType()))
                 .map(trackData -> this.cueHelper.getCueTrackPayload(trackData, sourceFilePath))
                 .map(this::createFutureForCueTrack)
                 .toList();
@@ -230,12 +237,22 @@ public class RecoderService {
 
     private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
         return (exitCode, t) -> {
-            if ((t == null) && (exitCode == CommandLine.ExitCode.OK)) {
+            if (t != null) {
+                log.error("Error on processing source file: {}", sourceFilePath, t);
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + ". " + t + "|@");
+                return;
+            }
+
+            if (exitCode != CommandLine.ExitCode.OK) {
+                log.error("Error on processing source file: {}. Exit code={}", sourceFilePath, exitCode);
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + ". Exit code=" + exitCode + "|@");
+                return;
+            }
+
+            // TODO: Come up with a way to handle unhandled exceptions for CompletableFutures
+            if (!sourceFilePath.toString().isBlank()) {
                 log.info("Completed OK {}", sourceFilePath);
                 OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
-            } else {
-                log.error("Error on processing source file: {}", sourceFilePath, t);
-                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + "|@");
             }
         };
     }
@@ -291,4 +308,9 @@ public class RecoderService {
         this.osNative.deleteToTrash(filePath);
     }
 
+    private CompletableFuture<Integer> handleUnhandledExceptions(CompletableFuture<Integer> future) {
+        // TODO: Find a way to handle unhandled exceptions for CompletableFutures
+        return future.whenComplete(oneFileProcessCompleteAction(Path.of("")))
+                     .handle(oneFileProcessResultAction());
+    }
 }

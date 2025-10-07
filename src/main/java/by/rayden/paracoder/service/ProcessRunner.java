@@ -38,7 +38,7 @@ public class ProcessRunner {
     private int exec(String recodeCommand, Path sourceFilePath) {
         log.debug("Recode command: {}", recodeCommand);
         String threadName = Thread.currentThread().getName();
-        OutUtils.ansiOut("Processing: @|yellow " + threadName + "|@ @|blue " + sourceFilePath + "|@");
+        OutUtils.ansiOut("Processing: @|yellow " + threadName + "|@ @|bold,blue " + sourceFilePath + "|@");
 
         try {
             Process lastProcess = runProcessWithRedirect(recodeCommand);
@@ -91,7 +91,7 @@ public class ProcessRunner {
      * are initialized using the redirect settings of the respective ProcessBuilder.
      * All other ProcessBuilder redirects should be Redirect.PIPE.
      */
-    private void applyRedirects(@SuppressWarnings("TypeMayBeWeakened") List<ProcessBuilder> builderList) {
+    private void applyRedirects(List<ProcessBuilder> builderList) {
         builderList.getFirst()
                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
                    .redirectError(ProcessBuilder.Redirect.INHERIT);
