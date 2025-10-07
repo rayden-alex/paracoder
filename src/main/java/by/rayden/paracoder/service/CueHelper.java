@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
@@ -57,6 +58,8 @@ public class CueHelper {
      */
     private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
 
+    private static final Map<Path, FileTime> LAST_MODIFIED_TIME_CACHE = new ConcurrentHashMap<>();
+
     /**
      * If the source file has a BOM, then the corresponding charset will be used,
      * otherwise UTF-8 will be used.
@@ -81,7 +84,7 @@ public class CueHelper {
 
         // It is assumed that the Audio file is located next to the source CUE file
         Path audioFilePath = sourceFilePath.resolveSibling(trackData.getParent().getFile());
-        FileTime audioLastModifiedTime = Files.getLastModifiedTime(audioFilePath);
+        FileTime audioLastModifiedTime = getCachedLastModifiedTime(audioFilePath);
         CueSheet cueSheet = trackData.getParent().getParent();
 
         return CueTrackPayload
@@ -103,6 +106,20 @@ public class CueHelper {
             .audioFilePath(audioFilePath)
             .audioFileTime(audioLastModifiedTime)
             .build();
+    }
+
+    /**
+     * A CUE-file most often contains only one audio file.
+     * Therefore, it makes sense to cache its last modification time.
+     */
+    private FileTime getCachedLastModifiedTime(Path audioFilePath) {
+        return LAST_MODIFIED_TIME_CACHE.computeIfAbsent(audioFilePath, path -> {
+            try {
+                return Files.getLastModifiedTime(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     /**
@@ -162,7 +179,7 @@ public class CueHelper {
     private void showCueParsingMessage(Message message) {
         switch (message) {
             case Error m -> OutUtils.ansiErr(" @|red " + m + "|@");
-            case Warning m -> OutUtils.ansiOut(" @|yellow " + m + "|@");
+            case Warning m -> OutUtils.ansiOut(" @|bold,yellow " + m + "|@");
 
             default -> System.out.println(message);
         }
