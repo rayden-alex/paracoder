@@ -1,4 +1,9 @@
-﻿# Ignoring all IntelliJ IDEA files
+﻿# The .gitignore file uses patterns to determine which files and folders to ignore.
+# An entry like FolderName/ without a leading slash (/) will ignore any directory named FolderName anywhere
+# within the project's directory tree, but also all the subfolders under it.
+
+
+# Ignoring all IntelliJ IDEA files
 .idea/
 
 # Archived Logs
