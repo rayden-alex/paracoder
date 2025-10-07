@@ -98,6 +98,10 @@ configurations.configureEach {
     exclude group: 'io.micrometer'
 }
 
+// Override the JUnit version.
+// See https://docs.junit.org/current/user-guide/#running-tests-build-spring-boot
+ext['junit-jupiter.version'] = '6.0.0'
+
 dependencies {
     compileOnly 'org.jetbrains:annotations:26.0.2-1'
 
