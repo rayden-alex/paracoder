@@ -113,9 +113,6 @@ public class RecoderService {
     private int asyncProcessFiles(Map<Path, BasicFileAttributes> pathMap) throws InterruptedException,
         ExecutionException, TimeoutException {
 
-//        CompletableFuture<List<CompletableFuture<Integer>>> async = CompletableFuture.supplyAsync(() -> processFiles(pathMap));
-//        List<CompletableFuture<Integer>> futures = async.join();
-
         List<CompletableFuture<Integer>> futures = processFiles(pathMap);
 
         // Waiting for all processes to complete
@@ -137,8 +134,7 @@ public class RecoderService {
                       .sorted(Map.Entry.comparingByKey())
                       .map(this::processFile)
                       .flatMap(Collection::stream)
-                      .map(f -> f.whenComplete(oneFileProcessCompleteAction(Path.of(""))))
-                      .map(f -> f.handle(oneFileProcessResultAction()))
+                      .map(this::handleUnhandledExceptions)
                       .toList();
     }
 
@@ -243,7 +239,7 @@ public class RecoderService {
         return (exitCode, t) -> {
             if (t != null) {
                 log.error("Error on processing source file: {}", sourceFilePath, t);
-                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + ". " + t.getMessage() + "|@");
+                OutUtils.ansiErr(" @|red Error on processing source file: " + sourceFilePath + ". " + t + "|@");
                 return;
             }
 
@@ -253,8 +249,11 @@ public class RecoderService {
                 return;
             }
 
-            log.info("Completed OK {}", sourceFilePath);
-            OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
+            // TODO: Come up with a way to handle unhandled exceptions for CompletableFutures
+            if (!sourceFilePath.toString().isBlank()) {
+                log.info("Completed OK {}", sourceFilePath);
+                OutUtils.ansiOut("Completed: @|blue " + sourceFilePath + "|@");
+            }
         };
     }
 
@@ -309,4 +308,9 @@ public class RecoderService {
         this.osNative.deleteToTrash(filePath);
     }
 
+    private CompletableFuture<Integer> handleUnhandledExceptions(CompletableFuture<Integer> future) {
+        // TODO: Find a way to handle unhandled exceptions for CompletableFutures
+        return future.whenComplete(oneFileProcessCompleteAction(Path.of("")))
+                     .handle(oneFileProcessResultAction());
+    }
 }
