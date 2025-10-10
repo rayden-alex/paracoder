@@ -71,6 +71,7 @@ public class RecodeCommand {
         String filePath = trackPayload.getAudioFilePath().toString();
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
+        // Required values for placeholders. Cannot be null.
         return resolvePlaceholders(commandTemplate, filePath)
             .replace("{{CUE_ST}}", trackPayload.getStartTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_ET}}", trackPayload.getEndTime().format(FFMPEG_TIME_FORMATTER))

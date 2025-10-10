@@ -73,7 +73,7 @@ class CueHelperTest {
         Executable executable = () -> this.cueHelper.validateCueParseResult(cueSheet);
 
         var e = assertThrows(RuntimeException.class, executable);
-        assertThat(e.getMessage()).isEqualTo("The source CUE file has an invalid format.");
+        assertThat(e.getMessage()).isEqualTo("The source CUE file has an invalid format. No AUDIO file.");
     }
 
     @Test
@@ -86,12 +86,9 @@ class CueHelperTest {
     }
 
     @Test
-    void getCueTrackPayloadTest() throws IOException {
+    void getAllCueTracksPayloadListTest() throws IOException {
         Path sourceFilePath = Paths.get("src/test/resources/cue/CyrillicUTF8.cue");
-        var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
-        var trackData = cueSheet.getFileData().getFirst().getTrackData().get(1); //Second track
-
-        var cueTrackPayload = this.cueHelper.getCueTrackPayload(trackData, sourceFilePath);
+        var cueTrackPayload = this.cueHelper.getAllCueTracksPayloadList(sourceFilePath).get(1); //Second track
 
         assertThat(cueTrackPayload).isNotNull();
         assertThat(cueTrackPayload.getPerformer()).isEqualTo("Мара");
@@ -112,4 +109,26 @@ class CueHelperTest {
         // INDEX 01 03:49:00
         assertThat(cueTrackPayload.getEndTime()).isCloseTo(LocalTime.of(0, 3, 49, 0), inaccuracy);
     }
+
+    @Test
+    void getAllCueTracksPayloadList_ShouldThrowException_WhenNoTrackTitleFile() {
+        Path sourceFilePath = Paths.get("src/test/resources/cue/Invalid Format No Title.cue");
+
+        Executable executable = () -> this.cueHelper.getAllCueTracksPayloadList(sourceFilePath);
+
+        var e = assertThrows(RuntimeException.class, executable);
+        assertThat(e.getMessage()).isEqualTo("The source CUE file has an invalid format. No TRACK TITLE.");
+    }
+
+    @Test
+    void getAllCueTracksPayloadList_ShouldThrowException_WhenAudioFileNotExists() {
+        Path sourceFilePath = Paths.get("src/test/resources/cue/Invalid Format Audio File Not Exists.cue");
+
+        Executable executable = () -> this.cueHelper.getAllCueTracksPayloadList(sourceFilePath);
+
+        var e = assertThrows(RuntimeException.class, executable);
+        assertThat(e.getCause()).isInstanceOf(NoSuchFileException.class);
+        assertThat(e.getMessage()).contains("Audio File Not Exists.wav");
+    }
+
 }

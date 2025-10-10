@@ -7,7 +7,6 @@ import by.rayden.paracoder.win32native.OsNative;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.digitalmediaserver.cuelib.FileData;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
@@ -173,19 +172,9 @@ public class RecoderService {
 
     private List<CompletableFuture<Integer>> createFuturesForCueFile(Path sourceFilePath) {
         try {
-            OutUtils.ansiOut("Parsing CUE file: @|blue " + sourceFilePath + "|@");
-            var cueSheet = this.cueHelper.readCueSheet(sourceFilePath);
-            this.cueHelper.showCueParsingMessages(cueSheet);
-            log.info(cueSheet.toString());
-
-            this.cueHelper.validateCueParseResult(cueSheet);
-
-            return cueSheet
-                .getFileData().stream()
-                .map(FileData::getTrackData)
-                .flatMap(Collection::stream)
-                .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType()))
-                .map(trackData -> this.cueHelper.getCueTrackPayload(trackData, sourceFilePath))
+            return this.cueHelper
+                .getAllCueTracksPayloadList(sourceFilePath)
+                .stream()
                 .map(this::createFutureForCueTrack)
                 .toList();
         } catch (Exception e) {
