@@ -4,7 +4,10 @@
 
 
 # Ignoring all IntelliJ IDEA files
-.idea/
+/.idea/
+
+# IDEA run configurations
+/.run/
 
 # Archived Logs
 archived/
