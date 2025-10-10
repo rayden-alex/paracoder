@@ -109,7 +109,7 @@ ext['junit-jupiter.version'] = '6.0.0'
 dependencies {
     compileOnly 'org.jetbrains:annotations:26.0.2-1'
 
-    implementation 'net.java.dev.jna:jna:5.18.0'
+    implementation 'net.java.dev.jna:jna:5.18.1'
 
     implementation 'info.picocli:picocli-spring-boot-starter:4.7.7'
     implementation 'org.fusesource.jansi:jansi:2.4.2'
