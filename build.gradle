@@ -8,6 +8,10 @@ plugins {
     // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
     // https://github.com/n0mer/gradle-git-properties
     id 'com.gorylenko.gradle-git-properties' version '2.5.3'
+
+    // https://github.com/ben-manes/gradle-versions-plugin
+    // Provides tasks for discovering dependency updates.
+    id 'com.github.ben-manes.versions' version '0.53.0'
 }
 
 apply plugin: 'io.spring.dependency-management'
