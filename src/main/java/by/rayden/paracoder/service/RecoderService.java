@@ -4,6 +4,7 @@ import by.rayden.paracoder.cli.command.CommandController;
 import by.rayden.paracoder.config.PatternProperties;
 import by.rayden.paracoder.utils.OutUtils;
 import by.rayden.paracoder.win32native.OsNative;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
@@ -34,6 +35,7 @@ import java.util.regex.Pattern;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RecoderService {
     public static final Comparator<Path> REVERSED_PATH_COMPARATOR = Comparator
         .comparingInt(Path::getNameCount)
@@ -46,18 +48,9 @@ public class RecoderService {
     private final ProcessRunner processRunner;
     private final RecodeCommand recodeCommand;
     private final OsNative osNative;
-    private final CueHelper cueHelper;
+    private final CueService cueService;
 
     private CommandController.Params paraCoderParams;
-
-    public RecoderService(ProcessRunner processRunner, RecodeCommand recodeCommand,
-                          PatternProperties patternProperties, OsNative osNative, CueHelper cueHelper) {
-        this.processRunner = processRunner;
-        this.recodeCommand = recodeCommand;
-        this.patternProperties = patternProperties;
-        this.osNative = osNative;
-        this.cueHelper = cueHelper;
-    }
 
     /**
      * Not thread safe! (because of this.paraCoderParams)
@@ -70,7 +63,7 @@ public class RecoderService {
         }
 
         try {
-            Map<Path, BasicFileAttributes> pathMap = this.cueHelper.getFilteredPathMap(buildAbsolutePathTree());
+            Map<Path, BasicFileAttributes> pathMap = this.cueService.getFilteredPathMap(buildAbsolutePathTree());
 
             int maxExitCode = asyncProcessFiles(pathMap);
             processDirs(pathMap);
@@ -163,7 +156,7 @@ public class RecoderService {
         }
 
         String extension = FilenameUtils.getExtension(sourceFilePath.toString());
-        if (CueHelper.CUE_EXT.equalsIgnoreCase(extension)) {
+        if (CueService.CUE_EXT.equalsIgnoreCase(extension)) {
             return createFuturesForCueFile(sourceFilePath);
         } else {
             return Collections.singletonList(createFutureForOrdinalFile(sourceFilePath, sourceFileTime));
@@ -172,7 +165,7 @@ public class RecoderService {
 
     private List<CompletableFuture<Integer>> createFuturesForCueFile(Path sourceFilePath) {
         try {
-            return this.cueHelper
+            return this.cueService
                 .getAllCueTracksPayloadList(sourceFilePath)
                 .stream()
                 .map(this::createFutureForCueTrack)

@@ -1,6 +1,7 @@
 package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.config.PatternProperties;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class RecodeCommand {
     /**
      * Map to replace invalid characters in file name to HomoGlyphs
@@ -35,10 +37,6 @@ public class RecodeCommand {
 
     private static final DateTimeFormatter FFMPEG_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private final PatternProperties patternProperties;
-
-    public RecodeCommand(PatternProperties patternProperties) {
-        this.patternProperties = patternProperties;
-    }
 
     public String getCommand(Path filePath) {
         String extension = FilenameUtils.getExtension(filePath.toString());
@@ -100,7 +98,7 @@ public class RecodeCommand {
         metadata.put("DISCID", trackPayload.getDiscId());
 
         return metadata.entrySet().stream()
-                       .filter(entry -> entry.getValue() != null && !entry.getValue().toString().trim().isEmpty())
+                       .filter(entry -> entry.getValue() != null && !entry.getValue().toString().isBlank())
                        .map(this::createMetadataCommand)
                        .collect(Collectors.joining(" ", " ", " "));
     }

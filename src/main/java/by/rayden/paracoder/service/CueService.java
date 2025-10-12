@@ -16,7 +16,7 @@ import org.digitalmediaserver.cuelib.TrackData;
 import org.digitalmediaserver.cuelib.Warning;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -35,9 +35,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 @Slf4j
-public class CueHelper {
+public class CueService {
 
     /**
      * Extension of CUE-files
@@ -117,18 +117,23 @@ public class CueHelper {
             .title(trackData.getTitle())
             .performer(trackData.getPerformer() == null ? cueSheet.getPerformer() : trackData.getPerformer())
             .album(cueSheet.getTitle())
-            .year(cueSheet.getYear() != -1 ? cueSheet.getYear() : null)
+            .year(ifPresentOrElseNull(cueSheet.getYear()))
             .genre(cueSheet.getGenre())
             .comment(cueSheet.getComment())
             .discId(cueSheet.getDiscId())
-            .discNumber(cueSheet.getDiscNumber() != -1 ? cueSheet.getDiscNumber() : null)
-            .totalDiscs(cueSheet.getTotalDiscs() != -1 ? cueSheet.getTotalDiscs() : null)
+            .discNumber(ifPresentOrElseNull(cueSheet.getDiscNumber()))
+            .totalDiscs(ifPresentOrElseNull(cueSheet.getTotalDiscs()))
             .startTime(trackInterval.start)
             .endTime(trackInterval.end)
             .sourceFilePath(sourceFilePath)
             .audioFilePath(audioFilePath)
             .audioFileTime(audioLastModifiedTime)
             .build();
+    }
+
+    @Nullable
+    private Integer ifPresentOrElseNull(int value) {
+        return value != -1 ? value : null;
     }
 
     /**
