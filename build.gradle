@@ -102,9 +102,16 @@ configurations.configureEach {
     exclude group: 'io.micrometer'
 }
 
+// Override the dependencies versions managed by Spring Boot.
+// See https://docs.spring.io/spring-boot/appendix/dependency-versions/properties.html#appendix.dependency-versions.properties
+
 // Override the JUnit version.
 // See https://docs.junit.org/current/user-guide/#running-tests-build-spring-boot
 ext['junit-jupiter.version'] = '6.0.0'
+
+// Override the LogBack version.
+// Fix CVE-2025-11226. See https://www.mend.io/vulnerability-database/CVE-2025-11226
+ext['logback.version'] = '1.5.19'
 
 dependencies {
     compileOnly 'org.jetbrains:annotations:26.0.2-1'
