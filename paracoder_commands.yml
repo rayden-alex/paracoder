@@ -41,6 +41,12 @@ pattern:
     cue_mp3: >-
       ${defaults.ffmpeg} -i "{{F}}" -c copy -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_ARTIST}} - {{CUE_TITLE}}.mp3"
 
+    cue_m2ts: >-
+      ${defaults.ffmpeg} -i "{{F}}" -vn -map 0:a:0 -af "channelmap=channel_layout=5.1, aresample=48000:resampler=soxr:precision=30" -c:a libopus -b:a 384k -mapping_family 1 -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
+#    cue_m2ts: >-
+#      ${defaults.ffmpeg} -i "{{F}}" -vn -map 0:a:0 -c:a flac -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate 384 - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
     cue_any: >-
       ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:a -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
