@@ -10,9 +10,10 @@ import picocli.CommandLine;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.NONE;
 import static picocli.CommandLine.IFactory;
 
-@SpringBootTest(args = {"--help"})
+@SpringBootTest(webEnvironment = NONE, args = {"--help"})
 public class CommandControllerTest {
     @Autowired
     private IFactory cliFactory;

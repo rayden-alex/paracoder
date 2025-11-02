@@ -3,7 +3,11 @@ package by.rayden.paracoder.service;
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
@@ -14,12 +18,23 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class ProcessRunnerTest {
 
     private static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
     private static final Charset PROCESS_CHARSET = StandardCharsets.UTF_8;
+
+    @Mock
+    private static RecoderThreadPool recoderThreadPoolMock;
+
+    private static ProcessRunner processRunner;
+
+    @BeforeAll
+    static void beforeAll() {
+        OsNative osNative = new OsNativeWindowsImpl();
+        processRunner = new ProcessRunner(recoderThreadPoolMock, osNative);
+    }
 
     @Test
     void testShowArgs() throws Exception {
@@ -109,10 +124,6 @@ class ProcessRunnerTest {
 
     @Test
     void testProcessFactoryWithoutPiping() throws Exception {
-        RecoderThreadPool recoderThreadPool = mock(RecoderThreadPool.class);
-        OsNative osNative = new OsNativeWindowsImpl();
-        ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
-
         Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 p2");
         ProcessResult res = execCapturedProcess(process);
 
@@ -128,10 +139,6 @@ class ProcessRunnerTest {
 
     @Test
     void testProcessFactoryWithPiping() throws Exception {
-        RecoderThreadPool recoderThreadPool = mock(RecoderThreadPool.class);
-        OsNative osNative = new OsNativeWindowsImpl();
-        ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
-
         Process process = processRunner
             .runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \"p2 3\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
@@ -148,9 +155,6 @@ class ProcessRunnerTest {
 
     @Test
     void testProcessFactoryWithPipingAndUnicodeParam() throws Exception {
-        RecoderThreadPool recoderThreadPool = mock(RecoderThreadPool.class);
-        OsNative osNative = new OsNativeWindowsImpl();
-        ProcessRunner processRunner = new ProcessRunner(recoderThreadPool, osNative);
         String unicodeFileName = "ბენდი sløwed L‘ÂME фыва 💃🕺🎼.flac";
 
         Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \""
