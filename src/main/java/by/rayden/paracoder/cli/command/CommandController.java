@@ -1,10 +1,13 @@
 package by.rayden.paracoder.cli.command;
 
+import by.rayden.paracoder.cli.ParacoderParamsReadyEvent;
 import by.rayden.paracoder.cli.PropertiesVersionProvider;
+import by.rayden.paracoder.config.PatternProperties;
 import by.rayden.paracoder.service.RecoderService;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 @Component
+@RequiredArgsConstructor
 @Command(name = "paracoder",
     versionProvider = PropertiesVersionProvider.class,
     mixinStandardHelpOptions = true,
@@ -22,17 +26,16 @@ import java.util.concurrent.Callable;
     description = CommandController.APP_DESCRIPTION,
     parameterListHeading = "%nParameters:%n",
     optionListHeading    = "%nOptions:%n",
-    showDefaultValues = true,
-    usageHelpWidth = 120,
-    defaultValueProvider = CommandLine.PropertiesDefaultProvider.class
+    usageHelpWidth = 120
 )
 public class CommandController implements Callable<Integer> {
     static final String APP_DESCRIPTION = """
         
         ParaCoder CLI:
         This is a ParaCoder application
-        to recode lossless audio files to different format using multiple threads.""";
+        to recode files/directories to different format using multiple threads.""";
 
+    private final ApplicationEventPublisher eventPublisher;
     private final RecoderService recoderService;
 
     @Option(names = {"-pf", "--preserve-file-timestamp"},
@@ -56,18 +59,21 @@ public class CommandController implements Callable<Integer> {
     private boolean deleteSourceFilesToTrash = false;
 
     @Option(names = {"-t", "--thread-count"},
-        showDefaultValue = CommandLine.Help.Visibility.NEVER,
         description = "The number of threads to use for recode (default: ${DEFAULT-VALUE}).")
     @Getter
     private int threadCount = 4;
 
-    @Parameters(description = "Files and directories to recode")
+    /**
+     * @see PatternProperties
+     */
+    @Option(names = {"-c", "--config-location"},
+        description = "Location of the main configuration YAML file (default: ${DEFAULT-VALUE}).")
+    @Getter
+    private Path configPath = Path.of("paracoder_commands.yml");
+
+    @Parameters(arity = "1..*", description = "Files and directories to recode")
     private List<Path> inputPathList;
 
-
-    public CommandController(RecoderService recoderService) {
-        this.recoderService = recoderService;
-    }
 
     public List<Path> getInputPathList() {
         return this.inputPathList == null ? Collections.emptyList() : Collections.unmodifiableList(this.inputPathList);
@@ -75,6 +81,8 @@ public class CommandController implements Callable<Integer> {
 
     @Override
     public Integer call() {
+        this.eventPublisher.publishEvent(new ParacoderParamsReadyEvent(this));
+
         var paraCoderParams = new Params(getInputPathList(), this.preserveFileTimestamp, this.preserveDirTimestamp,
             this.recurse, this.deleteSourceFilesToTrash);
 
