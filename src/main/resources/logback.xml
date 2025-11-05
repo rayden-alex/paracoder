@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false">
-<!--    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">-->
-<!--        &lt;!&ndash; reset all previous level configurations of all j.u.l. loggers &ndash;&gt;-->
-<!--        <resetJUL>true</resetJUL>-->
-<!--    </contextListener>-->
-
     <!--    <include resource="org/springframework/boot/logging/logback/defaults.xml" />-->
     <property name="LOG_HOME" value="log"/>
     <!--    <property name="CONSOLE_LOG_CHARSET" value="UTF-8"/>-->
-<!--    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">-->
-<!--        <target>System.out</target>-->
-<!--        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">-->
-<!--            <charset>UTF-8</charset>-->
-<!--            &lt;!&ndash;            <charset>cp866</charset>&ndash;&gt;-->
-<!--            &lt;!&ndash;            <pattern>%d{yyyy-MM-dd HH:mm:ss} %clr(%-5level) %logger{35} - %msg%n</pattern>&ndash;&gt;-->
-<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{35} - %msg%n</pattern>-->
-<!--        </encoder>-->
-<!--    </appender>-->
+
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n%rootException{3}</pattern>
+        </encoder>
+    </appender>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_HOME}/paracoder.log</file>
@@ -38,20 +37,16 @@
 
     <shutdownHook class="ch.qos.logback.core.hook.DefaultShutdownHook"/>
 
-<!--    <appender name="FILE_ASYNC" class="ch.qos.logback.classic.AsyncAppender">-->
-<!--        <queueSize>5000</queueSize>-->
-<!--        <discardingThreshold>0</discardingThreshold>-->
-<!--        <appender-ref ref="FILE" />-->
-<!--    </appender>-->
 
     <logger name="by.rayden.paracoder" level="DEBUG"/>
 <!--    <logger name="java.lang.ProcessBuilder" level="TRACE" />-->
 
-    <root level="WARN" additivity="false">
+    <root level="WARN">
         <appender-ref ref="FILE"/>
     </root>
 
-    <root level="OFF">
-        <appender-ref ref="consoleAppender" />
+<!--    TRACE, DEBUG, INFO, WARN, ERROR, ALL or OFF-->
+    <root level="ERROR">
+        <appender-ref ref="CONSOLE" />
     </root>
 </configuration>
