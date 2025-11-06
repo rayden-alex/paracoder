@@ -107,7 +107,7 @@ configurations.configureEach {
 
 // Override the JUnit version.
 // See https://docs.junit.org/current/user-guide/#running-tests-build-spring-boot
-ext['junit-jupiter.version'] = '6.0.0'
+ext['junit-jupiter.version'] = '6.0.1'
 
 // Override the LogBack version.
 // Fix CVE-2025-11226. See https://www.mend.io/vulnerability-database/CVE-2025-11226
