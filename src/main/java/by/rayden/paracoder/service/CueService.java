@@ -14,8 +14,9 @@ import org.digitalmediaserver.cuelib.Message;
 import org.digitalmediaserver.cuelib.Position;
 import org.digitalmediaserver.cuelib.TrackData;
 import org.digitalmediaserver.cuelib.Warning;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.lang.Nullable;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,9 +35,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 @Slf4j
-public class CueHelper {
+public class CueService {
 
     /**
      * Extension of CUE-files
@@ -59,12 +61,15 @@ public class CueHelper {
     private static final LocalTime END_OF_FILE_TIME = LocalTime.of(23, 59, 59);
 
     private static final Map<Path, FileTime> LAST_MODIFIED_TIME_CACHE = new ConcurrentHashMap<>();
+    private static final String INVALID_FORMAT = "The source CUE file has an invalid format. ";
+
 
     /**
      * If the source file has a BOM, then the corresponding charset will be used,
      * otherwise UTF-8 will be used.
      */
-    public CueSheet readCueSheet(Path sourceFilePath) throws IOException {
+    @VisibleForTesting
+    CueSheet readCueSheet(Path sourceFilePath) throws IOException {
         ByteOrderMark[] detectBOMs = {ByteOrderMark.UTF_8,
             ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE,
             ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE};
@@ -78,8 +83,26 @@ public class CueHelper {
         return CueParser.parse(bomInputStream, charset);
     }
 
+    public List<CueTrackPayload> getAllCueTracksPayloadList(Path sourceFilePath) throws IOException {
+        OutUtils.ansiOut("Parsing CUE file: @|blue " + sourceFilePath + "|@");
+
+        var cueSheet = readCueSheet(sourceFilePath);
+        showCueParsingMessages(cueSheet);
+        log.info(cueSheet.toString());
+
+        validateCueParseResult(cueSheet);
+
+        return cueSheet
+            .getFileData().stream()
+            .map(FileData::getTrackData)
+            .flatMap(Collection::stream)
+            .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType()))
+            .map(trackData -> getCueTrackPayload(trackData, sourceFilePath))
+            .toList();
+    }
+
     @SneakyThrows
-    public CueTrackPayload getCueTrackPayload(TrackData trackData, Path sourceFilePath) {
+    private CueTrackPayload getCueTrackPayload(TrackData trackData, Path sourceFilePath) {
         var trackInterval = getTrackInterval(trackData);
 
         // It is assumed that the Audio file is located next to the source CUE file
@@ -94,18 +117,23 @@ public class CueHelper {
             .title(trackData.getTitle())
             .performer(trackData.getPerformer() == null ? cueSheet.getPerformer() : trackData.getPerformer())
             .album(cueSheet.getTitle())
-            .year(cueSheet.getYear() != -1 ? cueSheet.getYear() : null)
+            .year(ifPresentOrElseNull(cueSheet.getYear()))
             .genre(cueSheet.getGenre())
             .comment(cueSheet.getComment())
             .discId(cueSheet.getDiscId())
-            .discNumber(cueSheet.getDiscNumber() != -1 ? cueSheet.getDiscNumber() : null)
-            .totalDiscs(cueSheet.getTotalDiscs() != -1 ? cueSheet.getTotalDiscs() : null)
+            .discNumber(ifPresentOrElseNull(cueSheet.getDiscNumber()))
+            .totalDiscs(ifPresentOrElseNull(cueSheet.getTotalDiscs()))
             .startTime(trackInterval.start)
             .endTime(trackInterval.end)
             .sourceFilePath(sourceFilePath)
             .audioFilePath(audioFilePath)
             .audioFileTime(audioLastModifiedTime)
             .build();
+    }
+
+    @Nullable
+    private Integer ifPresentOrElseNull(int value) {
+        return value != -1 ? value : null;
     }
 
     /**
@@ -164,7 +192,29 @@ public class CueHelper {
     public void validateCueParseResult(CueSheet cueSheet) {
         List<FileData> audioFileDataList = cueSheet.getFileData();
         if (audioFileDataList.isEmpty() || hasEmptyAudioFiles(audioFileDataList)) {
-            throw new RuntimeException("The source CUE file has an invalid format.");
+            throw new RuntimeException(INVALID_FORMAT + "No AUDIO file.");
+        }
+
+        audioFileDataList
+            .stream()
+            .map(FileData::getTrackData)
+            .flatMap(Collection::stream)
+            .filter(trackData -> "AUDIO".equalsIgnoreCase(trackData.getDataType()))
+            .forEach(this::validateTrackData);
+    }
+
+    private void validateTrackData(TrackData trackData) {
+        if (trackData.getTitle() == null) {
+            throw new RuntimeException(INVALID_FORMAT + "No TRACK TITLE.");
+        }
+
+        if (trackData.getNumber() == -1) {
+            throw new RuntimeException(INVALID_FORMAT + "No TRACK NUMBER.");
+        }
+
+        CueSheet cueSheet = trackData.getParent().getParent();
+        if (cueSheet.getPerformer() == null && trackData.getPerformer() == null) {
+            throw new RuntimeException(INVALID_FORMAT + "No PERFORMER.");
         }
     }
 

@@ -34,7 +34,3 @@ spring:
   sql:
     init:
       mode: never
-
-  config:
-    # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.importing
-    import: "file:paracoder_commands.yml"

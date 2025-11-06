@@ -10,7 +10,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.IFactory;
 
 import java.util.Arrays;
-import java.util.Properties;
 
 @Component
 @Slf4j
@@ -18,9 +17,6 @@ public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator 
     private final CommandController commandController;
     private final IFactory cliFactory; // auto-configured to inject PicocliSpringFactory
     private final UnicodeCommandLine unicodeCommandLine;
-
-    @SuppressWarnings("CollectionDeclaredAsConcreteClass")
-    private static final Properties staticProps = System.getProperties();
 
     private int exitCode;
 
@@ -44,7 +40,7 @@ public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator 
                      .forEach(processHandle -> {
                          String processInfo = processHandle.info().commandLine()
                                                            .orElseGet(() -> "PID:" + processHandle.pid());
-                         log.info("Descendant process to destroy: {}", processInfo);
+                         log.warn("Descendant process to destroy: {}", processInfo);
                          processHandle.destroyForcibly();
                      });
     }
@@ -57,9 +53,8 @@ public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator 
     public void run(String... args) {
         log.info("ParaCoder started.");
 
-        if (log.isDebugEnabled()) {
-            staticProps.forEach((k, v) -> log.debug("Static system property {}={}", k, v));
-            System.getProperties().forEach((k, v) -> log.debug("Runtime system property {}={}", k, v));
+        if (log.isTraceEnabled()) {
+            System.getProperties().forEach((k, v) -> log.trace("Runtime system property {}={}", k, v));
         }
 
         String[] unicodeArgs = this.unicodeCommandLine.getArguments(args);
@@ -69,11 +64,27 @@ public class ParaCoderCliRunner implements CommandLineRunner, ExitCodeGenerator 
 
         try {
             AnsiConsole.systemInstall();
-            this.exitCode = new CommandLine(this.commandController, this.cliFactory).execute(unicodeArgs);
+            this.exitCode = new CommandLine(this.commandController, this.cliFactory)
+                .setExecutionExceptionHandler(createCustomErrorHandler())
+                .execute(unicodeArgs);
         } finally {
             AnsiConsole.systemUninstall();
             log.info("ParaCoder completed.");
         }
+    }
+
+    private CommandLine.IExecutionExceptionHandler createCustomErrorHandler() {
+        return (ex, cmd, parseResult) -> {
+            //ex.printStackTrace(); // no stack trace
+            cmd.getErr().println(cmd.getColorScheme().errorText(ex.getMessage()));
+            log.atDebug().setMessage("Picocli parse result: {}").addArgument(parseResult::expandedArgs).log();
+            log.error("Error on executing command", ex);
+//            cmd.usage(cmd.getErr());
+
+            return cmd.getExitCodeExceptionMapper() != null
+                ? cmd.getExitCodeExceptionMapper().getExitCode(ex)
+                : cmd.getCommandSpec().exitCodeOnExecutionException();
+        };
     }
 
     @Override
