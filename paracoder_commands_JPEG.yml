@@ -1,0 +1,25 @@
+defaults:
+  # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.property-placeholders
+
+pattern:
+  fileExtensions:
+    - png
+    - bmp
+    - jpeg
+    - jpg
+    - gif
+    - tif
+    - tiff
+#    - psd
+
+
+# -noise reduce
+# -gauss 5
+# -rtype lanczos
+# -rtype mitchell
+# -sharpen 15
+
+  commandTemplate:
+    any: >-
+      "c:\Program Files\nConvert\nconvert.exe" -out jpegli -quiet -gauss 3 -resize longest 3072 -rflag decr -rtype lanczos -sharpen 10 -q 95 -opthuff -dct 2 -subsampling 0 -truecolors -keepfiledate "{{F}}"
+#      "c:\Program Files\nConvert\nconvert.exe" -out jpegli -quiet -gauss 5 -resize longest 3072 -rflag decr -rtype mitchell -sharpen 15 -q 93 -opthuff -dct 2 -subsampling 0 -truecolors -keepfiledate "{{F}}"
