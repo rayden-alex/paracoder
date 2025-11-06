@@ -39,9 +39,9 @@ public class CommandControllerTest {
             .getUsageMessage(CommandLine.Help.Ansi.OFF);
 
         assertThat(actual).contains(
-            List.of("Usage: paracoder [-dhrV] [-pd] [-pf] [-c=<configPath>] [-t=<threadCount>] [<inputPathList>...]",
+            List.of("Usage: paracoder [-dhrV] [-pd] [-pf] [-c=<configPath>] [-t=<threadCount>] <inputPathList>...",
                 "This is a ParaCoder application",
-                "-h, --help                 Show this help message and exit",
-                "-V, --version              Print version information and exit"));
+                "-h, --help               Show this help message and exit.",
+                "-V, --version            Print version information and exit."));
     }
 }
