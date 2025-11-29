@@ -1,13 +1,13 @@
 plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.7'
-    id 'io.freefair.lombok' version '9.0.0'
+    id 'io.freefair.lombok' version '9.1.0'
     id 'me.qoomon.git-versioning' version '6.4.4'
 
     // Generating a git.properties file containing information about the state of your git source code repository when the project was built
     // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
     // https://github.com/n0mer/gradle-git-properties
-    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.4'
 
     // https://github.com/ben-manes/gradle-versions-plugin
     // Provides tasks for discovering dependency updates.
@@ -121,7 +121,7 @@ dependencies {
     implementation 'info.picocli:picocli-spring-boot-starter:4.7.7'
     implementation 'org.fusesource.jansi:jansi:2.4.2'
 
-    implementation 'commons-io:commons-io:2.20.0'
+    implementation 'commons-io:commons-io:2.21.0'
     implementation 'org.digitalmediaserver:cuelib-core:2.0.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
