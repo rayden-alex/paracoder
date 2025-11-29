@@ -19,4 +19,4 @@ pattern:
 
   commandTemplate:
     any: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a libmp3lame -cutoff 20400 -q:a 0 -b 256k -map_metadata 0:s:a -map_metadata 0 "{{D}}{{P}}{{N}}.mp3"
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a libmp3lame -cutoff 20.1k -q 0 -compression_level 0 -map_metadata 0:s:a -map_metadata 0 "{{D}}{{P}}{{N}}.mp3"
