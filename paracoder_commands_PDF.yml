@@ -1,0 +1,7 @@
+pattern:
+  fileExtensions:
+    - pdf
+
+  commandTemplate:
+    pdf: >-
+      "c:\Rip\xpdf-tools\bin64\pdfimages.exe" -j -J -u -list "{{F}}" "{{D}}{{P}}{{N}}"
