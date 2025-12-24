@@ -1,6 +1,11 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.7'
+    id 'org.springframework.boot' version '3.5.9'
+
+    // Use Spring AOT
+    // https://docs.spring.io/spring-boot/gradle-plugin/aot.html
+    id 'org.springframework.boot.aot' version '3.5.9'
+
     id 'io.freefair.lombok' version '9.1.0'
     id 'me.qoomon.git-versioning' version '6.4.4'
 
@@ -125,8 +130,8 @@ dependencies {
     implementation 'org.digitalmediaserver:cuelib-core:2.0.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.mockito:mockito-core:5.20.0'
-    mockitoAgent('org.mockito:mockito-core:5.20.0') {
+    testImplementation 'org.mockito:mockito-core:5.21.0'
+    mockitoAgent('org.mockito:mockito-core:5.21.0') {
         transitive = false
     }
 }
@@ -161,6 +166,10 @@ tasks.register('versionDebug') {
         println(my_project.property("git.commit.timestamp.datetime"))
         println(my_project.property("git.ref"))
     }
+}
+
+tasks.named('build') {
+    dependsOn 'processAot'
 }
 
 test {
