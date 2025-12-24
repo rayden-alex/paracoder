@@ -6,7 +6,7 @@ rem This is not mandatory since a valid working dir set in the shortcut (.lnk) t
 rem pushd %~dp0
 rem echo %CD%
 
-java -XX:AOTCache=paracoder.aot -XX:+UseCompactObjectHeaders -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -jar d:\java\prj\paracoder\build\libs\ParaCoder.jar --recurse --thread-count=5 --config-location=paracoder_commands_MP3_LAME.yml %*
+java -XX:AOTCache=paracoder.aot -XX:+UseCompactObjectHeaders -Dspring.aot.enabled=true -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -jar d:\java\prj\paracoder\build\libs\ParaCoder.jar --recurse --thread-count=5 --config-location=paracoder_commands_MP3_LAME.yml %*
 
 echo ERRORLEVEL:%ERRORLEVEL%
 
