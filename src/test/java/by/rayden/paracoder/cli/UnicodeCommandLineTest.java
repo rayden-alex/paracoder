@@ -1,21 +1,31 @@
 package by.rayden.paracoder.cli;
 
 import by.rayden.paracoder.win32native.OsNative;
+import by.rayden.paracoder.win32native.OsNativeWindowsFFM;
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.FieldSource;
 
 import java.net.URISyntaxException;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ParameterizedClass
+@FieldSource("osNativeProvider")
 class UnicodeCommandLineTest {
-    private static UnicodeCommandLine unicodeCommandLine;
+    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsImpl(), new OsNativeWindowsFFM());
+
+    @Parameter
+    static OsNative osNative;
+
+    static UnicodeCommandLine unicodeCommandLine;
 
     @BeforeAll
     static void setUp() {
-        OsNative osNative = new OsNativeWindowsImpl();
         unicodeCommandLine = new UnicodeCommandLine(osNative);
     }
 
