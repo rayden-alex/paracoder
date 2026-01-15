@@ -12,7 +12,7 @@ import org.springframework.boot.context.properties.bind.PropertySourcesPlacehold
 import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.PropertiesPropertySource;
-import org.springframework.core.io.PathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -66,7 +66,7 @@ public class PatternProperties {
     private BindResult<PatternProperties> bindObjectByYaml(String prefix, Class<PatternProperties> target,
                                                            Path configPath) {
         var factory = new YamlPropertiesFactoryBean();
-        factory.setResources(new PathResource(configPath));
+        factory.setResources(new FileSystemResource(configPath));
         Properties properties = Objects.requireNonNull(factory.getObject());
 
         return getBinder(properties).bind(prefix, target);
