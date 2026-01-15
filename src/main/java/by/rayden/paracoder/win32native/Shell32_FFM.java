@@ -1,7 +1,5 @@
 package by.rayden.paracoder.win32native;
 
-import org.springframework.lang.NonNull;
-
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -67,6 +65,8 @@ public class Shell32_FFM {
     //@formatter:on
 
     /**
+     * Contains information that the SHFileOperation function uses to perform file operations.
+     * <p>
      * SHFILEOPSTRUCTW Layout (Windows x64)
      * <pre>
      * typedef struct _SHFILEOPSTRUCTW {
@@ -85,16 +85,28 @@ public class Shell32_FFM {
      * Только указатели ????? Надо еще уточнить!
      */
     private final StructLayout SHFILEOPSTRUCT_LAYOUT = MemoryLayout.structLayout(
+        // A window handle to the dialog box to display information about the status of the file operation.
         ValueLayout.ADDRESS.withName("hwnd"),                   // HWND
+        // An FO_* value that indicates which operation to perform.
         ValueLayout.JAVA_INT.withName("wFunc"),                 // UINT (FO_DELETE = 3)
         MemoryLayout.paddingLayout(4),                  // padding
+        // A pointer to one or more source file names, double null-terminated.
         ValueLayout.ADDRESS.withName("pFrom"),                  // PCZZWSTR (двойной нуль-терминатор)
+        // A pointer to the destination file or directory name.
         ValueLayout.ADDRESS.withName("pTo"),                    // PCZZWSTR
+        // Flags that control the file operation.
         ValueLayout.JAVA_SHORT.withName("fFlags"),              // FILEOP_FLAGS (FOF_ALLOWUNDO = 0x40)
         MemoryLayout.paddingLayout(2),                  // padding
+        // When the function returns, this member contains TRUE if any file operations were aborted before they were
+        // completed; otherwise, FALSE. An operation can be manually aborted by the user through UI or it can be
+        // silently aborted by the system if the FOF_NOERRORUI or FOF_NOCONFIRMATION flags were set.
         ValueLayout.JAVA_INT.withName("fAnyOperationsAborted"), // BOOL: This is usually a typedef for an integer type
 //        MemoryLayout.paddingLayout(2),                  // padding
+        // When the function returns, this member contains a handle to a name mapping object that contains the old
+        // and new names of the renamed files. This member is used only if the fFlags member includes the
+        // FOF_WANTMAPPINGHANDLE flag.
         ValueLayout.ADDRESS.withName("hNameMappings"),          // LPVOID
+        // A pointer to the title of a progress dialog box. This is a null-terminated string.
         ValueLayout.ADDRESS.withName("lpszProgressTitle")       // PCWSTR
     ).withByteAlignment(8);
 
@@ -112,7 +124,26 @@ public class Shell32_FFM {
 
 
     /**
-     * Разбирает строку командной строки в список аргументов.
+     * Parses a Unicode command line string and returns an array of pointers to the
+     * command line arguments, along with a count of such arguments, in a way that
+     * is similar to the standard C run-time {@code argv} and {@code argc} values.
+     * <p> <p>
+     * param {@code lpCmdLine} A Unicode string that contains the full command line. If this
+     *                  parameter is an empty string the function returns the path to the
+     *                  current executable file.
+     * <p>
+     * param {@code pNumArgs}  Pointer to an {@code int} that receives the number of array
+     *                  elements returned, similar to {@code argc}.
+     * <p>
+     * return A pointer to an array of {@code WTypes.LPWSTR} values, similar to
+     * {@code argv}. If the function fails, the return value is
+     * {@code null}. To get extended error information, call {@code Kernel32#GetLastError}.
+     * <p> <p>
+     * {@code CommandLineToArgvW} allocates a block of contiguous memory for
+     * pointers to the argument strings, and for the argument strings
+     * themselves; the calling application must free the memory used by the
+     * argument list when it is no longer needed. To free the memory, use a
+     * single call to the {@link Kernel32#LocalFree} function.
      */
     public List<String> commandLineToArgvW(String commandLine) {
         // Используем Confined Arena для автоматического управления памятью в блоке
@@ -143,7 +174,6 @@ public class Shell32_FFM {
     }
 
     /// Convert an array of pointers to the command line arguments to string list.
-    @NonNull
     private List<String> getArgList(MemorySegment pArgv, MemorySegment pNumArgs) {
         try {
             int numArgs = pNumArgs.get(ValueLayout.JAVA_INT, 0);
@@ -172,10 +202,17 @@ public class Shell32_FFM {
         // The maximum length of a command line in Windows is generally either 8,191 or 32,767 characters,
         // depending on how the process is launched.
         return strPtr.reinterpret(Short.MAX_VALUE).getString(0, StandardCharsets.UTF_16LE);
-//        return strPtr.getString(0, StandardCharsets.UTF_16LE);
     }
 
 
+    /**
+     * This function can be used to copy, move, rename, or delete a file system object.
+     * <p> <p>
+     * param {@code fileOp} Address of an SHFILEOPSTRUCT structure that contains information this function
+     * needs to carry out the specified operation.
+     * <p>
+     * return Returns zero if successful, or nonzero otherwise.
+     */
     public int shFileOperation(String... paths) {
         try (Arena arena = Arena.ofConfined()) {
             // Выделяем память под структуру
