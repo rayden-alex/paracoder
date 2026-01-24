@@ -1,10 +1,10 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '4.0.1'
+    id 'org.springframework.boot' version '4.0.2'
 
     // Use Spring AOT
     // https://docs.spring.io/spring-boot/gradle-plugin/aot.html
-    id 'org.springframework.boot.aot' version '4.0.1'
+    id 'org.springframework.boot.aot' version '4.0.2'
 
     id 'io.freefair.lombok' version '9.2.0'
     id 'me.qoomon.git-versioning' version '6.4.4'
