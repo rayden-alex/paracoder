@@ -18,7 +18,7 @@ public class OsNativeWindowsImpl implements OsNative {
     public String[] getUnicodeCommandLine() {
         try {
             WString lpCmdLine = Kernel32.INSTANCE.GetCommandLineW();
-            return getCommandLineToArgv(lpCmdLine);
+            return getCommandLineToArgv(lpCmdLine.toString());
         } catch (Throwable t) {
             throw new RuntimeException("Error parsing program arguments using JNA", t);
         }
@@ -28,23 +28,24 @@ public class OsNativeWindowsImpl implements OsNative {
      * Parses a command line string and returns an array of Strings of the command
      * line arguments.
      *
-     * @param lpCmdLine A string that contains the full command line. If this parameter is
+     * @param cmdLine A string that contains the full command line. If this parameter is
      *                  an empty string the function returns the path to the current
      *                  executable file.
      * @return An array of strings, similar to {@code argv}.
      */
     @Override
-    public String[] getCommandLineToArgv(WString lpCmdLine) {
+    public String[] getCommandLineToArgv(String cmdLine) {
         IntByReference nArgs = new IntByReference();
-        Pointer strArr = Shell32.INSTANCE.CommandLineToArgvW(lpCmdLine, nArgs);
-        if (strArr != null) {
-            try {
-                return strArr.getWideStringArray(0, nArgs.getValue());
-            } finally {
-                Kernel32.INSTANCE.LocalFree(strArr);
-            }
+        Pointer strArr = Shell32.INSTANCE.CommandLineToArgvW(new WString(cmdLine), nArgs);
+        if (strArr == null) {
+            throw new RuntimeException("Error at JNA call Shell32.CommandLineToArgvW");
         }
-        throw new RuntimeException("Error at JNA call Shell32.CommandLineToArgvW");
+
+        try {
+            return strArr.getWideStringArray(0, nArgs.getValue());
+        } finally {
+            Kernel32.INSTANCE.LocalFree(strArr);
+        }
     }
 
     @Override

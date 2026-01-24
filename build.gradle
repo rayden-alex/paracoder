@@ -1,13 +1,18 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.7'
-    id 'io.freefair.lombok' version '9.0.0'
+    id 'org.springframework.boot' version '4.0.2'
+
+    // Use Spring AOT
+    // https://docs.spring.io/spring-boot/gradle-plugin/aot.html
+    id 'org.springframework.boot.aot' version '4.0.2'
+
+    id 'io.freefair.lombok' version '9.2.0'
     id 'me.qoomon.git-versioning' version '6.4.4'
 
     // Generating a git.properties file containing information about the state of your git source code repository when the project was built
     // https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#howto.build.generate-git-info
     // https://github.com/n0mer/gradle-git-properties
-    id 'com.gorylenko.gradle-git-properties' version '2.5.3'
+    id 'com.gorylenko.gradle-git-properties' version '2.5.4'
 
     // https://github.com/ben-manes/gradle-versions-plugin
     // Provides tasks for discovering dependency updates.
@@ -107,11 +112,15 @@ configurations.configureEach {
 
 // Override the JUnit version.
 // See https://docs.junit.org/current/user-guide/#running-tests-build-spring-boot
-ext['junit-jupiter.version'] = '6.0.1'
+ext['junit-jupiter.version'] = '6.0.2'
 
 // Override the LogBack version.
 // Fix CVE-2025-11226. See https://www.mend.io/vulnerability-database/CVE-2025-11226
-ext['logback.version'] = '1.5.20'
+ext['logback.version'] = '1.5.24'
+
+// Override the Mockito version.
+ext['mockito.version'] = '5.21.0'
+ext['mockito-junit-jupiter.version'] = '5.21.0'
 
 dependencies {
     compileOnly 'org.jetbrains:annotations:26.0.2-1'
@@ -121,12 +130,12 @@ dependencies {
     implementation 'info.picocli:picocli-spring-boot-starter:4.7.7'
     implementation 'org.fusesource.jansi:jansi:2.4.2'
 
-    implementation 'commons-io:commons-io:2.20.0'
+    implementation 'commons-io:commons-io:2.21.0'
     implementation 'org.digitalmediaserver:cuelib-core:2.0.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.mockito:mockito-core:5.20.0'
-    mockitoAgent('org.mockito:mockito-core:5.20.0') {
+    testImplementation 'org.mockito:mockito-core'
+    mockitoAgent('org.mockito:mockito-core') {
         transitive = false
     }
 }
@@ -161,6 +170,10 @@ tasks.register('versionDebug') {
         println(my_project.property("git.commit.timestamp.datetime"))
         println(my_project.property("git.ref"))
     }
+}
+
+tasks.named('build') {
+    dependsOn 'processAot'
 }
 
 test {

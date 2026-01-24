@@ -17,6 +17,7 @@ import org.digitalmediaserver.cuelib.Warning;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -241,13 +242,16 @@ public class CueService {
     private TrackInterval getTrackInterval(TrackData trackData) {
         Position startPosition = trackData.getStartIndex().getPosition();
         LocalTime startTime = convertToTime(startPosition); // TODO: Do I need a PreGap processing ?
+        List<TrackData> trackDataList = trackData.getParent().getTrackData();
 
         LocalTime endTime;
-        if (trackData == trackData.getParent().getTrackData().getLast()) {
+        if (trackData == trackDataList.getLast()) {
             endTime = END_OF_FILE_TIME; // to the end of file
         } else {
-            int nextTrackIndex = trackData.getNumber();
-            TrackData nextTrackData = trackData.getParent().getTrackData().get(nextTrackIndex);
+            int trackIndex = trackDataList.indexOf(trackData);
+            Assert.isTrue(trackIndex >= 0, "Track not found in the file track list");
+
+            TrackData nextTrackData = trackDataList.get(trackIndex + 1);
             endTime = convertToTime(nextTrackData.getStartIndex().getPosition());
         }
         return new TrackInterval(startTime, endTime);

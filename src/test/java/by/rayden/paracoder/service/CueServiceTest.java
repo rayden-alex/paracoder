@@ -66,6 +66,21 @@ class CueServiceTest {
     }
 
     @Test
+    void readMultiFileCueSheetTest() throws Exception {
+        Path sourceFilePath = Paths.get("src/test/resources/cue/MultiFileCue.cue");
+        var cueSheet = this.cueService.readCueSheet(sourceFilePath);
+
+        assertThat(cueSheet.getFileData()).hasSize(2);
+        assertThat(cueSheet.getAllTrackData()).hasSize(7);
+
+        assertThat(cueSheet.getFileData().getFirst().getFile()).isEqualTo("Side A.flac");
+        assertThat(cueSheet.getFileData().getFirst().getTrackData()).hasSize(4);
+
+        assertThat(cueSheet.getFileData().getLast().getFile()).isEqualTo("Side B.flac");
+        assertThat(cueSheet.getFileData().getLast().getTrackData()).hasSize(3);
+    }
+
+    @Test
     void validateCueParseResult_ShouldThrowException_WhenWrongCueFormatFile() throws Exception {
         Path sourceFilePath = Paths.get("src/test/resources/cue/Stars In Stereo - Stars In Stereo.cue");
         var cueSheet = this.cueService.readCueSheet(sourceFilePath);

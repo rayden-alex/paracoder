@@ -1,12 +1,13 @@
 package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNative;
+import by.rayden.paracoder.win32native.OsNativeWindowsFFM;
 import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.FieldSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
@@ -18,22 +19,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+@ParameterizedClass
+@FieldSource("osNativeProvider")
 @ExtendWith(MockitoExtension.class)
 class ProcessRunnerTest {
+    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsImpl(), new OsNativeWindowsFFM());
 
-    private static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
-    private static final Charset PROCESS_CHARSET = StandardCharsets.UTF_8;
+    static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
+    static final Charset PROCESS_CHARSET = StandardCharsets.UTF_8;
 
-    @Mock
-    private static RecoderThreadPool recoderThreadPoolMock;
+    static ProcessRunner processRunner;
 
-    private static ProcessRunner processRunner;
-
-    @BeforeAll
-    static void beforeAll() {
-        OsNative osNative = new OsNativeWindowsImpl();
-        processRunner = new ProcessRunner(recoderThreadPoolMock, osNative);
+    ProcessRunnerTest(OsNative osNative) {
+        processRunner = new ProcessRunner(mock(RecoderThreadPool.class), osNative);
     }
 
     @Test

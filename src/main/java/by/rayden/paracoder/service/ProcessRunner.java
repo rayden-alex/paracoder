@@ -103,7 +103,7 @@ public class ProcessRunner {
 
     private String[] parseCommand(String str) {
         log.debug("Command before parse: {}", str);
-        String[] argv = this.osNative.getCommandLineToArgv(new WString(str));
+        String[] argv = this.osNative.getCommandLineToArgv(str);
         log.atDebug().setMessage("Command after parse: {}").addArgument(() -> Arrays.asList(argv)).log();
         return argv;
     }
