@@ -2,7 +2,6 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsFFM;
-import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +24,7 @@ import static org.mockito.Mockito.mock;
 @FieldSource("osNativeProvider")
 @ExtendWith(MockitoExtension.class)
 class ProcessRunnerTest {
-    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsImpl(), new OsNativeWindowsFFM());
+    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsFFM());
 
     static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
     static final Charset PROCESS_CHARSET = StandardCharsets.UTF_8;

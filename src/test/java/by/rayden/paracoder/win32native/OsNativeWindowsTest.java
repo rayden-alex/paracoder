@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ParameterizedClass
 @FieldSource("osNativeProvider")
 class OsNativeWindowsTest {
-    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsImpl(), new OsNativeWindowsFFM());
+    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsFFM());
 
     @Parameter
     static OsNative osNative;

@@ -2,7 +2,6 @@ package by.rayden.paracoder.cli;
 
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsFFM;
-import by.rayden.paracoder.win32native.OsNativeWindowsImpl;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
@@ -17,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ParameterizedClass
 @FieldSource("osNativeProvider")
 class UnicodeCommandLineTest {
-    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsImpl(), new OsNativeWindowsFFM());
+    static List<OsNative> osNativeProvider = List.of(new OsNativeWindowsFFM());
 
     @Parameter
     static OsNative osNative;
