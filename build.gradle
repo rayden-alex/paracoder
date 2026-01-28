@@ -116,7 +116,8 @@ ext['junit-jupiter.version'] = '6.0.2'
 
 // Override the LogBack version.
 // Fix CVE-2025-11226. See https://www.mend.io/vulnerability-database/CVE-2025-11226
-ext['logback.version'] = '1.5.24'
+// Fix CVE-2026-1225. See https://www.cvedetails.com/cve/CVE-2026-1225/
+ext['logback.version'] = '1.5.26'
 
 // Override the Mockito version.
 ext['mockito.version'] = '5.21.0'
