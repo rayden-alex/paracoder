@@ -24,6 +24,7 @@ pattern:
 # -rtype lanczos
 # -rtype mitchell
 # -sharpen 15
+# -autocontrast
 
   commandTemplate:
     any: >-
