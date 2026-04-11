@@ -3,6 +3,7 @@ defaults:
   ffmpeg: "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
   lame: "\"c:\\Rip\\Lame\\Lame.exe\""
 
+# -V 0 -q 0 --lowpass 20.5
 
 pattern:
   fileExtensions:
@@ -13,7 +14,7 @@ pattern:
 
   commandTemplate:
     wav: >-
-      ${defaults.lame} -V 0 -q 0 --lowpass 20.1 --nohist --noreplaygain --pad-id3v2 --id3v2-only --id3v2-utf16 --quiet "{{F}}" "{{D}}{{P}}{{N}}.mp3"
+      ${defaults.lame} --cbr -b320 --lowpass 20.5 --nohist --noreplaygain --pad-id3v2 --id3v2-only --id3v2-utf16 --quiet "{{F}}" "{{D}}{{P}}{{N}}.mp3"
 
     any: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a pcm_s24le -map_metadata 0:s:a -map_metadata 0 -f wav - | ${defaults.lame} -V 0 -q 0 --lowpass 20.1 --nohist --noreplaygain --pad-id3v2 --id3v2-only --id3v2-utf8 --quiet - "{{D}}{{P}}{{N}}.mp3"
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a pcm_s24le -map_metadata 0:s:a -map_metadata 0 -f wav - | ${defaults.lame} --cbr -b320 --lowpass 20.5 --nohist --noreplaygain --pad-id3v2 --id3v2-only --id3v2-utf16 --quiet - "{{D}}{{P}}{{N}}.mp3"

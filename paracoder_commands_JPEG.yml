@@ -1,6 +1,6 @@
 defaults:
   # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.property-placeholders
-#  filter: "-noise reduce"
+  filter: "-noise reduce"
 #  filter: "-gauss 3"
 #  filter: "-gauss 5"
 
@@ -24,8 +24,9 @@ pattern:
 # -rtype lanczos
 # -rtype mitchell
 # -sharpen 15
+# -autocontrast
 
   commandTemplate:
     any: >-
-      "c:\Program Files\nConvert\nconvert.exe" -out jpegli -quiet ${defaults.filter:} -resize longest 3072 -rflag decr -rtype lanczos -sharpen 10 -q 95 -opthuff -dct 2 -subsampling 0 -truecolors -keepfiledate "{{F}}"
+      "c:\Program Files\nConvert\nconvert.exe" -out jpegli -quiet ${defaults.filter:} -resize longest 3072 -rflag decr -rtype lanczos -sharpen 10 -q 95 -opthuff -dct 2 -subsampling 0 -smoothingf 2 -i -rmeta -rexifthumb -truecolors -keepfiledate "{{F}}"
 #      "c:\Program Files\nConvert\nconvert.exe" -out jpegli -quiet -gauss 5 -resize longest 3072 -rflag decr -rtype mitchell -sharpen 15 -q 93 -opthuff -dct 2 -subsampling 0 -truecolors -keepfiledate "{{F}}"

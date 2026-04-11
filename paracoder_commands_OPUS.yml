@@ -8,6 +8,7 @@ defaults:
   # For 5.1 multichannel audio equivalent bitrate is 192 * w(5.1)/w(2.0) = 192 * (5.1/2.0)^0.75 = 387 kbps (~384 kbps)
 
   ffmpeg: "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
+  ffmpeg_Librempeg: "\"c:\\Rip\\FFMPEG (Librempeg)\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
   opus: "\"c:\\Rip\\opus-tools\\opusenc.exe\" --quiet --music --vbr"
 
 
@@ -35,8 +36,10 @@ pattern:
     # -map 0:v?  --- Use first input video stream if exists. When this stream is not exists then second dummy video stream will be used.
     # -c:v png -update 1 -frames:v 1 -y   --- Extract video stream to file using PNG codec. Update file on every new frame. Use only first frame. Overwrite file if it already exists.
     #      ${defaults.ffmpeg} -i "{{F}}" -f lavfi -i nullsrc=s=128x128 -map 0:v? -c:v png -update 1 -frames:v 1 -y "{{D}}{{P}}Cover_ffmpeg.png" -map 0:a -c:a copy -map_metadata 0:s:0 -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+    #
+    # using -map_metadata 0:s:a:0, which copies metadata from the first input file (0:), first audio stream (s:a:0) (where the metadata is) to all output files (global metadata).
     cue_opus: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:a copy -map_metadata 0:s:a -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+      ${defaults.ffmpeg} -i "{{F}}" -c:a copy -map_chapters -1 -map_metadata 0:s:a -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     cue_mp3: >-
       ${defaults.ffmpeg} -i "{{F}}" -c copy -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_ARTIST}} - {{CUE_TITLE}}.mp3"
@@ -48,7 +51,7 @@ pattern:
 #      ${defaults.ffmpeg} -i "{{F}}" -vn -map 0:a:0 -c:a flac -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate 384 - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     cue_any: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -map_metadata 0:s:a -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+      ${defaults.ffmpeg_Librempeg} -ss {{CUE_ST}} -to {{CUE_ET}} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 {{CUE_METADATA}} -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     any: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a flac -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"

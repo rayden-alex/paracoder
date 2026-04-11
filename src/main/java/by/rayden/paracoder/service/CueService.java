@@ -1,7 +1,6 @@
 package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.utils.OutUtils;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.FilenameUtils;
@@ -102,7 +101,6 @@ public class CueService {
             .toList();
     }
 
-    @SneakyThrows
     private CueTrackPayload getCueTrackPayload(TrackData trackData, Path sourceFilePath) {
         var trackInterval = getTrackInterval(trackData);
 

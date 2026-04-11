@@ -2,7 +2,6 @@ package by.rayden.paracoder.service;
 
 import by.rayden.paracoder.utils.OutUtils;
 import by.rayden.paracoder.win32native.OsNative;
-import com.sun.jna.WString;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.springframework.context.annotation.Lazy;
