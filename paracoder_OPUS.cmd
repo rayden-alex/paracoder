@@ -12,7 +12,7 @@ set Green=%ESC%[32m
 set Red=%ESC%[41;93m
 set ColorOff=%ESC%[0m
 
-java -XX:AOTCache=paracoder.aot -XX:+UseCompactObjectHeaders -Dspring.aot.enabled=true -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -jar d:\java\prj\paracoder\build\libs\extracted\ParaCoder.jar --recurse -d --thread-count=5 --config-location=paracoder_commands_OPUS.yml %*
+java -XX:AOTCache=.\build\libs\paracoder.aot -XX:+UseCompactObjectHeaders -Dspring.aot.enabled=true -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -jar .\build\libs\extracted\ParaCoder.jar --recurse -d --thread-count=5 --config-location=paracoder_commands_OPUS.yml %*
 
 if %ERRORLEVEL% NEQ 0 (
   echo %Red% ERRORLEVEL: %ERRORLEVEL% %ColorOff%
