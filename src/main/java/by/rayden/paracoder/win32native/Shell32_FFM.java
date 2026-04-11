@@ -143,7 +143,7 @@ public class Shell32_FFM {
      * pointers to the argument strings, and for the argument strings
      * themselves; the calling application must free the memory used by the
      * argument list when it is no longer needed. To free the memory, use a
-     * single call to the {@link Kernel32#LocalFree} function.
+     * single call to the {@link Kernel32_FFM#localFree} function.
      */
     public List<String> commandLineToArgvW(String commandLine) {
         // Используем Confined Arena для автоматического управления памятью в блоке
