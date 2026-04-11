@@ -9,6 +9,9 @@ defaults:
 
   ffmpeg: "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
 
+# -q:a 0 -compression_level 0 == vbr -V 0 -q 0
+# -b:a 320k
+# -cutoff 20.5k
 
 pattern:
   fileExtensions:
@@ -19,4 +22,4 @@ pattern:
 
   commandTemplate:
     any: >-
-      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a libmp3lame -cutoff 20.1k -q 0 -compression_level 0 -map_metadata 0:s:a -map_metadata 0 "{{D}}{{P}}{{N}}.mp3"
+      ${defaults.ffmpeg} -i "{{F}}" -c:v copy -c:a libmp3lame -b:a 320k -cutoff 20.5k -map_metadata 0:s:a -map_metadata 0 "{{D}}{{P}}{{N}}.mp3"
