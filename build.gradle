@@ -174,8 +174,74 @@ tasks.register('versionDebug') {
     }
 }
 
+tasks.register('prepareAotLayout', JavaExec) {
+    group = "build"
+    description = 'Prepare the extracted application for AOT Cache creation'
+
+    dependsOn tasks.bootJar
+
+    def sourceJar = bootJar.archiveFile.get().asFile
+    def extractDir = layout.buildDirectory.dir("libs\\extracted").get().asFile
+
+    doFirst {
+        delete extractDir
+    }
+
+    // Setup for SpringBoot command "jarmode=tools":
+    // java -Djarmode=tools -jar d:\java\prj\paracoder\build\libs\ParaCoder.jar extract --destination d:\java\prj\paracoder\build\libs\extracted
+    jvmArgs = ["-Djarmode=tools"]
+    mainClass = "-jar" // A trick that allows to run a JAR directly by passing its path in args
+    args = [
+            sourceJar.absolutePath,
+            "extract",
+            "--destination", extractDir.absolutePath
+    ]
+
+    // Tell Gradle that we are creating a directory (for incremental builds)
+    outputs.dir(extractDir)
+}
+
+tasks.register('generateAotCache', JavaExec) {
+    group = 'build'
+    description = 'Generates AOT Cache for the Java application'
+
+    dependsOn tasks.prepareAotLayout, tasks.processAot
+
+    // Dynamically get the launcher from the project's toolchain settings to ensure
+    // that javac (compilation) and java (cache generation in the generateAotCache task)
+    // use the same JDK binary file.
+    def service = project.extensions.getByType(JavaToolchainService)
+    javaLauncher = service.launcherFor(java.toolchain)
+
+    // Setting up a training run:
+    def extractDir = layout.buildDirectory.dir("libs\\extracted").get().asFile
+    workingDir = extractDir
+    mainClass = "-jar"
+
+    // Training run using thin (extracted) JAR (must end with code 0).
+    // The CLI must do minimal work and shut down to save the cache, so use '--help' parameter
+    def thinJar = file("${extractDir}\\${bootJar.archiveFileName.get()}")
+    args = [
+            thinJar.absolutePath,
+            '--help'
+    ]
+
+    // Java AOT-Cache write options
+    jvmArgs = [
+            "-XX:AOTCacheOutput=${layout.buildDirectory.get()}\\libs\\paracoder.aot",
+            "-XX:+UseCompactObjectHeaders",
+            "-Dspring.aot.enabled=true",
+            "-Dspring.context.exit=onRefresh"
+    ]
+}
+
 tasks.named('build') {
     dependsOn 'processAot'
+}
+
+// Link "generateAotCache" task to the build cycle: the cache will be created immediately after the "build"
+tasks.named('build') {
+    finalizedBy 'generateAotCache'
 }
 
 test {
