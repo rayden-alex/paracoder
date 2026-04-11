@@ -1,0 +1,33 @@
+defaults:
+  # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.property-placeholders
+
+  bitrate: "192"
+  # https://wiki.hydrogenaud.io/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
+  # The following function gives you a weight w for each cc, where cc is the channel configuration written as a decimal number (1.0 for mono, 2.0 for stereo, 5.1 for surround, etc.):
+  # w(cc) = cc^0.75
+  # For 5.1 multichannel audio equivalent bitrate is 192 * w(5.1)/w(2.0) = 192 * (5.1/2.0)^0.75 = 387 kbps (~384 kbps)
+
+  ffmpeg: "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
+  ffmpeg_Librempeg: "\"c:\\Rip\\FFMPEG (Librempeg)\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
+  opus: "\"c:\\Rip\\opus-tools\\opusenc.exe\" --quiet --music --vbr"
+
+
+pattern:
+  fileExtensions:
+    - flac
+    - m4a
+    - wav
+    - ape
+    - dts
+    - wv
+    - w64 
+    - aiff
+    - mka
+
+
+  commandTemplate:
+    any: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+    
+#    any: >-
+#      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95" -c:a libopus -b:a 192k -mapping_family 0 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95 -c:a libopus -b:a 192k" "{{D}}{{P}}{{N}}.opus"
