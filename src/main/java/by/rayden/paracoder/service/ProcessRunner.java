@@ -39,8 +39,7 @@ public class ProcessRunner {
         String threadName = Thread.currentThread().getName();
         OutUtils.ansiOut("Processing: @|yellow " + threadName + "|@ @|bold,blue " + sourceFilePath + "|@");
 
-        try {
-            Process lastProcess = runProcessWithRedirect(recodeCommand);
+        try (Process lastProcess = runProcessWithRedirect(recodeCommand)) {
             boolean isCompleted = lastProcess.waitFor(9, TimeUnit.MINUTES);
 
             if (isCompleted) {
