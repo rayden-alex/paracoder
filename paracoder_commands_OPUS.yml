@@ -22,6 +22,7 @@ pattern:
     - wv
     - w64 
     - aiff
+    - mka
     - cue
 
 
@@ -51,7 +52,10 @@ pattern:
 #      ${defaults.ffmpeg} -i "{{F}}" -vn -map 0:a:0 -c:a flac -ss {{CUE_ST}} -to {{CUE_ET}} {{CUE_METADATA}} -f flac - | ${defaults.opus} --bitrate 384 - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
 
     cue_any: >-
-      ${defaults.ffmpeg_Librempeg} -ss {{CUE_ST}} -to {{CUE_ET}} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 {{CUE_METADATA}} -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+      ${defaults.ffmpeg_Librempeg} -ss {{CUE_ST}} -to {{CUE_ET}} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, volume=volume=-1.0dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 {{CUE_METADATA}} -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
+    mka: >-
+      ${defaults.ffmpeg} -i "{{F}}" -vn -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -f flac - | ${defaults.opus} --bitrate 384 - "{{D}}{{P}}{{N}}.opus"
 
     any: >-
-      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, volume=volume=-1.0dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
