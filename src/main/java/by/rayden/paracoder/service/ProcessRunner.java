@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -73,14 +74,52 @@ public class ProcessRunner {
     }
 
     /**
-     * A recodeCommand can have just one command/process to run as well.
+     * A recodeCommand can have multiple commands separated by | (a pipe character)
+     * or it can have just one command/process to run as well.
+     * <p>
+     * If a pipe character is inside quotes then the entire string in quotes
+     * is considered a single parameter and is not divided into two commands.
+     * @see ProcessRunnerTest#testSplitCommandByPipeChar(String, String[])
      */
+    @SuppressWarnings("JavadocReference")
     private List<ProcessBuilder> makeProcessBuilders(String recodeCommand) {
-        return Arrays.stream(recodeCommand.split("\\|"))
-                     .map(String::trim)
-                     .map(this::parseCommand)
-                     .map(ProcessBuilder::new)
-                     .toList();
+        return splitCommandByPipeChar(recodeCommand)
+            .stream()
+            .map(String::trim)
+            .map(this::parseCommand)
+            .map(ProcessBuilder::new)
+            .toList();
+    }
+
+    /**
+     * Splits the string by the | character, ignoring the ones inside quotes
+     */
+    @VisibleForTesting
+    List<String> splitCommandByPipeChar(String command) {
+        List<String> result = new ArrayList<>();
+
+        int start = 0;
+        boolean inQuotes = false;
+
+        for (int i = 0; i < command.length(); i++) {
+            char c = command.charAt(i);
+
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == '|' && !inQuotes) {
+                result.add(command.substring(start, i));
+                start = i + 1;
+            }
+        }
+
+        // If the flag remains true, it means that some quote is not closed.
+        if (inQuotes) {
+            throw new IllegalArgumentException("Command template error: odd number of quotes in the string.");
+        }
+
+        // Adding the last fragment
+        result.add(command.substring(start));
+        return result;
     }
 
     /**

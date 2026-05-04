@@ -6,7 +6,10 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.FieldSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
@@ -16,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -168,6 +172,23 @@ class ProcessRunnerTest {
         assertThat(args.get(0)).endsWith("ShowArgs.exe");
         assertThat(args.get(1)).isEqualTo("p1");
         assertThat(args.get(2)).isEqualTo(unicodeFileName);
+    }
+
+    public static Stream<Arguments> provideArgsToTestSplitCommandByPipeChar() {
+        return Stream.of(
+            Arguments.of("aaa|bbb", new String[]{"aaa", "bbb"}),
+            Arguments.of("aaa|bbb|ccc", new String[]{"aaa", "bbb", "ccc"}),
+            Arguments.of("aaa|\"bbb|ccc\"|ddd", new String[]{"aaa", "\"bbb|ccc\"", "ddd"}),
+            Arguments.of("aaa|\"bbb|ccc1|ccc2\"|ddd", new String[]{"aaa", "\"bbb|ccc1|ccc2\"", "ddd"})
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideArgsToTestSplitCommandByPipeChar")
+    void testSplitCommandByPipeChar(String command, String[] expectedCommands) {
+        List<String> commandsByProcess = processRunner.splitCommandByPipeChar(command);
+
+        assertThat(commandsByProcess).containsExactly(expectedCommands);
     }
 
     private record ProcessResult(int exitCode, String out, String err) {
