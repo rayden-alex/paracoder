@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 @ParameterizedClass
@@ -175,11 +176,14 @@ class ProcessRunnerTest {
     }
 
     public static Stream<Arguments> provideArgsToTestSplitCommandByPipeChar() {
+        // \uD83D\uDC7B --- ghost emoji (code point 4 bytes)
+        // ✅ --- (code point 2 bytes, fits into char type)
         return Stream.of(
             Arguments.of("aaa|bbb", new String[]{"aaa", "bbb"}),
             Arguments.of("aaa|bbb|ccc", new String[]{"aaa", "bbb", "ccc"}),
             Arguments.of("aaa|\"bbb|ccc\"|ddd", new String[]{"aaa", "\"bbb|ccc\"", "ddd"}),
-            Arguments.of("aaa|\"bbb|ccc1|ccc2\"|ddd", new String[]{"aaa", "\"bbb|ccc1|ccc2\"", "ddd"})
+            Arguments.of("aaa\uD83D\uDC7B|✅\"bbb✅|\uD83D\uDC7Bccc\"✅|\uD83D\uDC7Bddd",
+                new String[]{"aaa\uD83D\uDC7B", "✅\"bbb✅|\uD83D\uDC7Bccc\"✅", "\uD83D\uDC7Bddd"})
         );
     }
 
@@ -189,6 +193,13 @@ class ProcessRunnerTest {
         List<String> commandsByProcess = processRunner.splitCommandByPipeChar(command);
 
         assertThat(commandsByProcess).containsExactly(expectedCommands);
+    }
+
+    @Test
+    void testSplitCommandByPipeChar_withOddQuotes() {
+        assertThatThrownBy(() -> processRunner.splitCommandByPipeChar("aaa|bbb\"bbb|ccc"))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Command template error: odd number of quotes");
     }
 
     private record ProcessResult(int exitCode, String out, String err) {

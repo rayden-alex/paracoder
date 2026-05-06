@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Gatherer;
 
 @Service
 @Slf4j
@@ -95,7 +96,7 @@ public class ProcessRunner {
      * Splits the string by the | character, ignoring the ones inside quotes
      */
     @VisibleForTesting
-    List<String> splitCommandByPipeChar(String command) {
+    List<String> splitCommandByPipeCharOld(String command) {
         List<String> result = new ArrayList<>();
 
         int start = 0;
@@ -120,6 +121,56 @@ public class ProcessRunner {
         // Adding the last fragment
         result.add(command.substring(start));
         return result;
+    }
+
+    /**
+     * Splits the string by the | character, ignoring the ones inside quotes
+     */
+    @VisibleForTesting
+    List<String> splitCommandByPipeChar(String command) {
+        return command.codePoints()
+                      .boxed()// IntStream doesn't support gather()
+                      .gather(ProcessRunner.splitBy('|'))
+                      .toList();
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private static Gatherer<Integer, ?, String> splitBy(char separator) {
+        // Local state of operation
+        class State {
+            final StringBuilder sb = new StringBuilder(128);
+            boolean inQuotes = false;
+        }
+
+        return Gatherer.ofSequential(
+            // Initializer
+            State::new,
+
+            // Integrator
+            (state, codePoint, downstream) -> {
+                // Сheck if we're inside quotes now
+                if (codePoint == '"') {
+                    state.inQuotes = !state.inQuotes;
+                }
+
+                if (!state.inQuotes && codePoint == separator) {
+                    // Push the accumulated string and clear the buffer
+                    downstream.push(state.sb.toString());
+                    state.sb.setLength(0);
+                } else {
+                    state.sb.appendCodePoint(codePoint);
+                }
+                return true;
+            },
+
+            // Finisher (analog of adding the last fragment)
+            (state, downstream) -> {
+                if (state.inQuotes) {
+                    throw new IllegalArgumentException("Command template error: odd number of quotes");
+                }
+                downstream.push(state.sb.toString());
+            }
+        );
     }
 
     /**
