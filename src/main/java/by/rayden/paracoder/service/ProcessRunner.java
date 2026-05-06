@@ -9,10 +9,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Gatherer;
 
 @Service
 @Slf4j
@@ -39,8 +41,7 @@ public class ProcessRunner {
         String threadName = Thread.currentThread().getName();
         OutUtils.ansiOut("Processing: @|yellow " + threadName + "|@ @|bold,blue " + sourceFilePath + "|@");
 
-        try {
-            Process lastProcess = runProcessWithRedirect(recodeCommand);
+        try (Process lastProcess = runProcessWithRedirect(recodeCommand)) {
             boolean isCompleted = lastProcess.waitFor(9, TimeUnit.MINUTES);
 
             if (isCompleted) {
@@ -74,14 +75,102 @@ public class ProcessRunner {
     }
 
     /**
-     * A recodeCommand can have just one command/process to run as well.
+     * A recodeCommand can have multiple commands separated by | (a pipe character)
+     * or it can have just one command/process to run as well.
+     * <p>
+     * If a pipe character is inside quotes then the entire string in quotes
+     * is considered a single parameter and is not divided into two commands.
+     * @see ProcessRunnerTest#testSplitCommandByPipeChar(String, String[])
      */
+    @SuppressWarnings("JavadocReference")
     private List<ProcessBuilder> makeProcessBuilders(String recodeCommand) {
-        return Arrays.stream(recodeCommand.split("\\|"))
-                     .map(String::trim)
-                     .map(this::parseCommand)
-                     .map(ProcessBuilder::new)
-                     .toList();
+        return splitCommandByPipeChar(recodeCommand)
+            .stream()
+            .map(String::trim)
+            .map(this::parseCommand)
+            .map(ProcessBuilder::new)
+            .toList();
+    }
+
+    /**
+     * Splits the string by the | character, ignoring the ones inside quotes
+     */
+    @VisibleForTesting
+    List<String> splitCommandByPipeCharOld(String command) {
+        List<String> result = new ArrayList<>();
+
+        int start = 0;
+        boolean inQuotes = false;
+
+        for (int i = 0; i < command.length(); i++) {
+            char c = command.charAt(i);
+
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == '|' && !inQuotes) {
+                result.add(command.substring(start, i));
+                start = i + 1;
+            }
+        }
+
+        // If the flag remains true, it means that some quote is not closed.
+        if (inQuotes) {
+            throw new IllegalArgumentException("Command template error: odd number of quotes in the string.");
+        }
+
+        // Adding the last fragment
+        result.add(command.substring(start));
+        return result;
+    }
+
+    /**
+     * Splits the string by the | character, ignoring the ones inside quotes
+     */
+    @VisibleForTesting
+    List<String> splitCommandByPipeChar(String command) {
+        return command.codePoints()
+                      .boxed()// IntStream doesn't support gather()
+                      .gather(ProcessRunner.splitBy('|'))
+                      .toList();
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private static Gatherer<Integer, ?, String> splitBy(char separator) {
+        // Local state of operation
+        class State {
+            final StringBuilder sb = new StringBuilder(128);
+            boolean inQuotes = false;
+        }
+
+        return Gatherer.ofSequential(
+            // Initializer
+            State::new,
+
+            // Integrator
+            (state, codePoint, downstream) -> {
+                // Сheck if we're inside quotes now
+                if (codePoint == '"') {
+                    state.inQuotes = !state.inQuotes;
+                }
+
+                if (!state.inQuotes && codePoint == separator) {
+                    // Push the accumulated string and clear the buffer
+                    downstream.push(state.sb.toString());
+                    state.sb.setLength(0);
+                } else {
+                    state.sb.appendCodePoint(codePoint);
+                }
+                return true;
+            },
+
+            // Finisher (analog of adding the last fragment)
+            (state, downstream) -> {
+                if (state.inQuotes) {
+                    throw new IllegalArgumentException("Command template error: odd number of quotes");
+                }
+                downstream.push(state.sb.toString());
+            }
+        );
     }
 
     /**

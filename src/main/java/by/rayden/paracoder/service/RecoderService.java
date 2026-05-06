@@ -145,7 +145,6 @@ public class RecoderService {
      * When processing one "CUE" file, several output files may be generated.
      * <p>That's why the result of the method is a List.
      */
-    @SneakyThrows
     private List<CompletableFuture<Integer>> processFile(Map.Entry<Path, BasicFileAttributes> entry) {
         Path sourceFilePath = entry.getKey();
         FileTime sourceFileTime = entry.getValue().lastModifiedTime();
