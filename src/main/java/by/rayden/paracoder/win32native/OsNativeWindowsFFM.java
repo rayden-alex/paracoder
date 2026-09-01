@@ -1,5 +1,6 @@
 package by.rayden.paracoder.win32native;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -7,11 +8,37 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
 @Primary
 public class OsNativeWindowsFFM implements OsNative {
+
+    private enum Shell32Error {
+        ERROR_UNKNOWN(-1),
+        ERROR_FILE_NOT_FOUND(2),
+        ERROR_PATH_NOT_FOUND(3),
+        ERROR_ACCESS_DENIED(5),
+        ERROR_SHARING_VIOLATION(32);
+
+        @Getter
+        private final int code;
+
+        private static final Map<Integer, Shell32Error> errors = Arrays
+            .stream(Shell32Error.values())
+            .collect(Collectors.toUnmodifiableMap(Shell32Error::getCode, Function.identity()));
+
+        Shell32Error(int code) {
+            this.code = code;
+        }
+
+        public static Shell32Error getErrorByCode(int code) {
+            return errors.getOrDefault(code, ERROR_UNKNOWN);
+        }
+    }
 
     @Override
     public String[] getUnicodeCommandLine() {
@@ -46,9 +73,12 @@ public class OsNativeWindowsFFM implements OsNative {
         String[] absPaths = new String[paths.length];
         Arrays.setAll(absPaths, i -> paths[i].toAbsolutePath().toString());
 
-        int ret = Shell32_FFM.INSTANCE.shFileOperation(absPaths);
-        if (ret != 0) {
-            throw new IOException("Error on deleting source file to the trash: " + Arrays.toString(absPaths) + ". ErrorCode=" + ret);
+        int errorCode = Shell32_FFM.INSTANCE.shFileOperation(absPaths);
+        if (errorCode != 0) {
+            throw new IOException("Error on deleting source file to the trash: "
+                + Arrays.toString(absPaths)
+                + ". ErrorCode=" + errorCode
+                + ". " + Shell32Error.getErrorByCode(errorCode));
         }
     }
 
