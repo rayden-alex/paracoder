@@ -1,15 +1,32 @@
 defaults:
   # https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#features.external-config.files.property-placeholders
 
-  bitrate: "192"
   # https://wiki.hydrogenaud.io/index.php?title=Bitrate#Equivalent_bitrate_estimates_for_multichannel_audio
   # The following function gives you a weight w for each cc, where cc is the channel configuration written as a decimal number (1.0 for mono, 2.0 for stereo, 5.1 for surround, etc.):
   # w(cc) = cc^0.75
   # For 5.1 multichannel audio equivalent bitrate is 192 * w(5.1)/w(2.0) = 192 * (5.1/2.0)^0.75 = 387 kbps (~384 kbps)
 
-  ffmpeg: "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
+  ffmpeg:           "\"c:\\Rip\\ffmpeg\\bin\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
   ffmpeg_Librempeg: "\"c:\\Rip\\FFMPEG (Librempeg)\\ffmpeg.exe\" -hide_banner -loglevel error -nostats -nostdin"
-  opus: "\"c:\\Rip\\opus-tools\\opusenc.exe\" --quiet --music --vbr"
+  opus:             "\"c:\\Rip\\opus-tools\\opusenc.exe\" --quiet --music --vbr"
+
+  bitrate: "192"
+  volume:  "-0.6"
+
+  ardftsrc:     "ardftsrc=48000:quality=65536:bandwidth=0.95"
+  librempeg_af: " -af \"asf2sf=dblp, ${defaults.ardftsrc}, volume=volume=${defaults.volume}dB:precision=double\" "
+  ffmpeg_af:    " -af \"volume=volume=${defaults.volume}dB:precision=double\" "
+
+  flac:         " -c:a flac -sample_fmt s32 -compression_level 3 -f flac "
+  libopus:      " -c:a libopus -b:a ${defaults.bitrate:192}k -mapping_family 0 "
+  opus_cli:     " ${defaults.flac} - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "
+
+  ardftsrc_meta:      "ENCODER_OPTIONS=${defaults.ardftsrc}, volume=${defaults.volume}dB"
+  libopus_meta:       "libopus -b:a ${defaults.bitrate:192}k -mapping_family 0"
+
+  ffmpeg_meta:        " -map_metadata 0:s:a -map_metadata 0 -metadata \"ENCODER_OPTIONS=volume=${defaults.volume}dB, ${defaults.libopus_meta}\"" 
+  librempeg_meta:     " -map_metadata 0:s:a -map_metadata 0 -metadata \"${defaults.ardftsrc_meta}, ${defaults.libopus_meta}\""
+  librempeg_meta_cli: " -map_metadata 0:s:a -map_metadata 0 -metadata \"${defaults.ardftsrc_meta}\""
 
 
 pattern:
@@ -23,21 +40,59 @@ pattern:
     - w64 
     - aiff
     - mka
+    - mkv
     - dff
+    - dsf
+    - m2ts
+    - cue
+    - vob
 
 
   commandTemplate:
     dff: >-
       ${defaults.ffmpeg_Librempeg} -i "{{F}}" -vn -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, volume=volume=3.3dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate 384 - "{{D}}{{P}}{{N}}.opus"
-   
-    flac48: >-
-      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, volume=volume=-1.2dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
-      
+
+    dff_to_flac: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -vn -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, volume=volume=5.5dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" "{{D}}{{P}}{{N}}.flac"
+
+    dsf: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -vn ${defaults.librempeg_af} ${defaults.librempeg_meta} ${defaults.libopus} "{{D}}{{P}}{{N}}.opus"
+
+    dsf_low_filter: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -vn -af "asf2sf=dblp, firequalizer=gain_entry='entry(0,0); entry(19500,0); entry(20500,-30); entry(22000,-90)' :wfunc=blackman:zero_phase=on:accuracy=20:fixed=on:delay=0.03, asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, volume=volume=5.0dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate 256 - "{{D}}{{P}}{{N}}.opus"
+
     flac: >-
-      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, compand=attacks=0:decays=0.35:ipoints=-90|-10.59|0|5:opoints=-120|-13.09|-0.5|5:soft-knee=0.7, volume=volume=-0.5dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
-   
-    any: >-
-      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, volume=volume=-1.1dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -vn ${defaults.librempeg_af} ${defaults.librempeg_meta} ${defaults.libopus} "{{D}}{{P}}{{N}}.opus"
+
+    flac_48: >-
+      ${defaults.ffmpeg} -i "{{F}}" -vn ${defaults.ffmpeg_af} ${defaults.libopus} ${defaults.ffmpeg_meta} "{{D}}{{P}}{{N}}.opus"
+
+    flac_5.1_libopus: >-
+      ${defaults.ffmpeg} -i "{{F}}" -vn -af "volume=volume=2.2dB:precision=float, channelmap=channel_layout=5.1" -c:a libopus -b:a 448k -mapping_family 1 -vbr on -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=volume=2.2dB, libopus -b:a 448k -mapping_family 1 -vbr on" "{{D}}{{P}}{{N}}.opus"
+
+    ape: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -vn ${defaults.librempeg_af} ${defaults.libopus} ${defaults.librempeg_meta} "{{D}}{{P}}{{N}}.opus"
+
+    vob: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c:v none -af "volume=volume=${defaults.volume}dB:precision=double"  -c:a libopus -b:a ${defaults.bitrate:192}k -mapping_family 0 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=volume=${defaults.volume}dB, libopus -b:a ${defaults.bitrate:192}k -mapping_family 0" "{{D}}{{P}}{{N}}.opus"
+
+    m2ts: >-
+      ${defaults.ffmpeg} -i "{{F}}" -c:v none ${defaults.ffmpeg_af}  ${defaults.libopus} ${defaults.ffmpeg_meta} "{{D}}{{P}}{{N}}.opus"
+
+    flac_drc: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95, compand=attacks=0:decays=0.35:ipoints=-90|-10.59|0|5:opoints=-120|-13.09|-0.5|5:soft-knee=3, volume=volume=-0.5dB:precision=double" -c:a flac -sample_fmt s32 -compression_level 3 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95" -f flac - | ${defaults.opus} --bitrate ${defaults.bitrate:192} - "{{D}}{{P}}{{N}}.opus"
+
+    cue_opus: >-
+      ${defaults.ffmpeg} -ss {{CUE_ST}} -to {{CUE_ET}} -i "{{F}}" -vn -c:a copy -map_chapters -1 -map_metadata 0:s:a -map_metadata 0 {{CUE_METADATA}} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
+    cue_any: >-
+      ${defaults.ffmpeg_Librempeg} -ss {{CUE_ST}} -to {{CUE_ET}} -i "{{F}}" -vn ${defaults.librempeg_af} ${defaults.librempeg_meta} {{CUE_METADATA}} ${defaults.libopus} "{{D}}{{P}}{{CUE_NUM}}. {{CUE_TITLE}}.opus"
+
+    any_opus_cli: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy ${defaults.librempeg_af} ${defaults.librempeg_meta_cli} ${defaults.opus_cli} "{{D}}{{P}}{{N}}.opus"
+
+    any_to_flac: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy ${defaults.librempeg_af} ${defaults.librempeg_meta_cli} ${defaults.flac} "{{D}}{{P}}{{N}}.flac"
     
-#    any: >-
-#      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v copy -af "asf2sf=dblp, ardftsrc=48000:quality=65536:bandwidth=0.95" -c:a libopus -b:a 192k -mapping_family 0 -map_metadata 0:s:a -map_metadata 0 -metadata "ENCODER_OPTIONS=ARDFTSRC=48000:quality=65536:bandwidth=0.95 -c:a libopus -b:a 192k" "{{D}}{{P}}{{N}}.opus"
+    any: >-
+      ${defaults.ffmpeg_Librempeg} -i "{{F}}" -c:v none ${defaults.librempeg_af} ${defaults.librempeg_meta} ${defaults.libopus} "{{D}}{{P}}{{N}}.opus"

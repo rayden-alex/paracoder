@@ -155,6 +155,11 @@ lombok {
 //    options.encoding = "UTF-8"
 //}
 
+//tasks.withType(JavaCompile).configureEach {
+//    options.deprecation = true
+//    // OR like this ->   options.compilerArgs += ['-Xlint:deprecation']
+//}
+
 tasks.withType(Test).configureEach {
     defaultCharacterEncoding = "UTF-8"
 }
@@ -258,5 +263,16 @@ test {
     // To show passed test in console output
 //    testLogging {
 //        events "passed", "skipped", "failed" // , "standardOut", "standardError"
+//    }
+
+//generateWindowsApi {
+//        functions = [
+//                "GetCommandLineW",
+//                "LocalFree",
+//                "CommandLineToArgvW",
+//                "SHFileOperationW"
+//        ]
+//        constants = [
+//        ]
 //    }
 }
