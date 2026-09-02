@@ -59,6 +59,7 @@ class RecoderServiceTest {
     @Test
         // https://github.com/projectlombok/lombok/issues/4040
         // [BUG] SneakyThrows has a runtime dependency on lombok.Lombok on Java 26 #4040
+        // Fixed in Lombok v1.18.48 (September 1st, 2026)
     void testDeleteToTrashFailsWhenFileIsLocked(@TempDir Path tempDir) throws Exception {
         // Create a temporary file
         File tempFile = tempDir.resolve("locked_file.txt").toFile();
@@ -80,10 +81,16 @@ class RecoderServiceTest {
                 .isThrownBy(() -> deleteFileToTrashNoSneakyThrows(osNative, tempFile.toPath()))
                 .withCauseInstanceOf(IOException.class);
 
-            // Calling deleteToTrash() with @SneakyThrows throws NoClassDefFoundError: lombok/Lombok
-            assertThatExceptionOfType(NoClassDefFoundError.class)
+//            // Calling deleteToTrash() with @SneakyThrows throws NoClassDefFoundError: lombok/Lombok
+//            assertThatExceptionOfType(NoClassDefFoundError.class)
+//                .isThrownBy(() -> deleteFileToTrashWithSneakyThrows(osNative, tempFile.toPath()))
+//                .withMessageContaining("Lombok");
+
+            // Calling deleteToTrash() with @SneakyThrows should throw an IOException
+            assertThatIOException()
                 .isThrownBy(() -> deleteFileToTrashWithSneakyThrows(osNative, tempFile.toPath()))
-                .withMessageContaining("Lombok");
+                .withMessageContaining("ErrorCode=32")
+                .withMessageContaining("ERROR_SHARING_VIOLATION");
         }
     }
 
