@@ -3,7 +3,6 @@ package by.rayden.paracoder.service;
 import org.assertj.core.data.TemporalUnitLessThanOffset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.function.Executable;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -17,7 +16,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatRuntimeException;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -85,19 +85,17 @@ class CueServiceTest {
         Path sourceFilePath = Paths.get("src/test/resources/cue/Stars In Stereo - Stars In Stereo.cue");
         var cueSheet = this.cueService.readCueSheet(sourceFilePath);
 
-        Executable executable = () -> this.cueService.validateCueParseResult(cueSheet);
-
-        var e = assertThrows(RuntimeException.class, executable);
-        assertThat(e.getMessage()).isEqualTo("The source CUE file has an invalid format. No AUDIO file.");
+        assertThatRuntimeException()
+            .isThrownBy(() -> this.cueService.validateCueParseResult(cueSheet))
+            .withMessage("The source CUE file has an invalid format. No AUDIO file.");
     }
 
     @Test
     void readCueSheet_ShouldThrowException_WhenFileNotExists() {
         Path sourceFilePath = Paths.get("src/test/resources/cue/FileNotExistName.cue");
 
-        Executable executable = () -> this.cueService.readCueSheet(sourceFilePath);
-
-        assertThrows(NoSuchFileException.class, executable);
+        assertThatExceptionOfType(NoSuchFileException.class)
+            .isThrownBy(() -> this.cueService.readCueSheet(sourceFilePath));
     }
 
     @Test
@@ -129,21 +127,19 @@ class CueServiceTest {
     void getAllCueTracksPayloadList_ShouldThrowException_WhenNoTrackTitleFile() {
         Path sourceFilePath = Paths.get("src/test/resources/cue/Invalid Format No Title.cue");
 
-        Executable executable = () -> this.cueService.getAllCueTracksPayloadList(sourceFilePath);
-
-        var e = assertThrows(RuntimeException.class, executable);
-        assertThat(e.getMessage()).isEqualTo("The source CUE file has an invalid format. No TRACK TITLE.");
+        assertThatRuntimeException()
+            .isThrownBy(() -> this.cueService.getAllCueTracksPayloadList(sourceFilePath))
+            .withMessage("The source CUE file has an invalid format. No TRACK TITLE.");
     }
 
     @Test
     void getAllCueTracksPayloadList_ShouldThrowException_WhenAudioFileNotExists() {
         Path sourceFilePath = Paths.get("src/test/resources/cue/Invalid Format Audio File Not Exists.cue");
 
-        Executable executable = () -> this.cueService.getAllCueTracksPayloadList(sourceFilePath);
-
-        var e = assertThrows(RuntimeException.class, executable);
-        assertThat(e.getCause()).isInstanceOf(NoSuchFileException.class);
-        assertThat(e.getMessage()).contains("Audio File Not Exists.wav");
+        assertThatRuntimeException()
+            .isThrownBy(() -> this.cueService.getAllCueTracksPayloadList(sourceFilePath))
+            .withCauseInstanceOf(NoSuchFileException.class)
+            .withMessageContaining("Audio File Not Exists.wav");
     }
 
 }
