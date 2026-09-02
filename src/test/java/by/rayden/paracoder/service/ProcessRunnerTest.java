@@ -34,10 +34,10 @@ class ProcessRunnerTest {
     static final Pattern SHOW_ARGS_REGEX = Pattern.compile("^argv\\[\\d+]: >(.*)<$", Pattern.MULTILINE);
     static final Charset PROCESS_CHARSET = StandardCharsets.UTF_8;
 
-    static ProcessRunner processRunner;
+    ProcessRunner processRunner;
 
     ProcessRunnerTest(OsNative osNative) {
-        processRunner = new ProcessRunner(mock(RecoderThreadPool.class), osNative);
+        this.processRunner = new ProcessRunner(mock(RecoderThreadPool.class), osNative);
     }
 
     @Test
@@ -128,7 +128,7 @@ class ProcessRunnerTest {
 
     @Test
     void testProcessFactoryWithoutPiping() throws Exception {
-        Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 p2");
+        Process process = this.processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 p2");
         ProcessResult res = execCapturedProcess(process);
 
         assertThat(res.exitCode).isZero();
@@ -143,7 +143,7 @@ class ProcessRunnerTest {
 
     @Test
     void testProcessFactoryWithPiping() throws Exception {
-        Process process = processRunner
+        Process process = this.processRunner
             .runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \"p2 3\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
@@ -161,7 +161,7 @@ class ProcessRunnerTest {
     void testProcessFactoryWithPipingAndUnicodeParam() throws Exception {
         String unicodeFileName = "ბენდი sløwed L‘ÂME фыва 💃🕺🎼.flac";
 
-        Process process = processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \""
+        Process process = this.processRunner.runProcessWithoutRedirect("src\\test\\resources\\ShowArgs.exe p1 \""
             + unicodeFileName + "\" | more.com /C");
         ProcessResult res = execCapturedProcess(process);
 
@@ -190,14 +190,14 @@ class ProcessRunnerTest {
     @ParameterizedTest
     @MethodSource("provideArgsToTestSplitCommandByPipeChar")
     void testSplitCommandByPipeChar(String command, String[] expectedCommands) {
-        List<String> commandsByProcess = processRunner.splitCommandByPipeChar(command);
+        List<String> commandsByProcess = this.processRunner.splitCommandByPipeChar(command);
 
         assertThat(commandsByProcess).containsExactly(expectedCommands);
     }
 
     @Test
     void testSplitCommandByPipeChar_withOddQuotes() {
-        assertThatThrownBy(() -> processRunner.splitCommandByPipeChar("aaa|bbb\"bbb|ccc"))
+        assertThatThrownBy(() -> this.processRunner.splitCommandByPipeChar("aaa|bbb\"bbb|ccc"))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Command template error: odd number of quotes");
     }

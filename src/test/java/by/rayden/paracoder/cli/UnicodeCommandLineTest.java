@@ -2,7 +2,7 @@ package by.rayden.paracoder.cli;
 
 import by.rayden.paracoder.win32native.OsNative;
 import by.rayden.paracoder.win32native.OsNativeWindowsFFM;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
@@ -21,16 +21,16 @@ class UnicodeCommandLineTest {
     @Parameter
     static OsNative osNative;
 
-    static UnicodeCommandLine unicodeCommandLine;
+    UnicodeCommandLine unicodeCommandLine;
 
-    @BeforeAll
-    static void setUp() {
-        unicodeCommandLine = new UnicodeCommandLine(osNative);
+    @BeforeEach
+    void setUp() {
+        this.unicodeCommandLine = new UnicodeCommandLine(osNative);
     }
 
     @Test
     void whenGetJarFileNameFromJarPathThenReturnJarFileName() {
-        String jarFileName = unicodeCommandLine
+        String jarFileName = this.unicodeCommandLine
             .getJarFileName("d:\\java\\prj\\paracoder\\build\\libs\\ParaCoder-1.0.2.jar");
 
         assertThat(jarFileName).isEqualTo("ParaCoder-1.0.2.jar");
@@ -38,21 +38,21 @@ class UnicodeCommandLineTest {
 
     @Test
     void whenGetJarFileNameFromNonJarThenReturnEmptyString() {
-        String jarFileName = unicodeCommandLine.getJarFileName("ghjgjgg");
+        String jarFileName = this.unicodeCommandLine.getJarFileName("ghjgjgg");
 
         assertThat(jarFileName).isEmpty();
     }
 
     @Test
     void whenGetJarFileNameFromEmptyThenReturnEmptyString() {
-        String jarFileName = unicodeCommandLine.getJarFileName("");
+        String jarFileName = this.unicodeCommandLine.getJarFileName("");
 
         assertThat(jarFileName).isEmpty();
     }
 
     @Test
     void getCodeSourcePath() throws URISyntaxException {
-        String codeSourcePath = unicodeCommandLine.getCodeSourcePath();
+        String codeSourcePath = this.unicodeCommandLine.getCodeSourcePath();
 
         // When test is running then CodeSourcePath is a path to main app class not to a JAR file.
         // Like "/D:/java/prj/paracoder/build/classes/java/main/"
@@ -78,7 +78,7 @@ class UnicodeCommandLineTest {
             "--version"
         };
         String jarFileName = "ParaCoder-1.0.2.jar";
-        List<String> argumentsOnly = unicodeCommandLine.getArgumentsOnly(commandLine);
+        List<String> argumentsOnly = this.unicodeCommandLine.getArgumentsOnly(commandLine);
 
         assertThat(argumentsOnly).containsExactly("-h", "--version");
     }
@@ -99,7 +99,7 @@ class UnicodeCommandLineTest {
             "--version"
         };
         String jarFileName = "ParaCoder-1.0.2.jar";
-        List<String> argumentsOnly = unicodeCommandLine.getArgumentsOnly(commandLine);
+        List<String> argumentsOnly = this.unicodeCommandLine.getArgumentsOnly(commandLine);
 
         assertThat(argumentsOnly).containsExactly("-h", "--version");
     }

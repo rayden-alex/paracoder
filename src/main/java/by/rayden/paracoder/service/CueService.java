@@ -14,7 +14,7 @@ import org.digitalmediaserver.cuelib.Position;
 import org.digitalmediaserver.cuelib.TrackData;
 import org.digitalmediaserver.cuelib.Warning;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -130,8 +130,7 @@ public class CueService {
             .build();
     }
 
-    @Nullable
-    private Integer ifPresentOrElseNull(int value) {
+    private @Nullable Integer ifPresentOrElseNull(int value) {
         return value != -1 ? value : null;
     }
 

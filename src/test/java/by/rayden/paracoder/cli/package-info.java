@@ -1,4 +1,4 @@
-@NonNullApi
+@NullMarked
 package by.rayden.paracoder.cli;
 
-import org.springframework.lang.NonNullApi;
+import org.jspecify.annotations.NullMarked;

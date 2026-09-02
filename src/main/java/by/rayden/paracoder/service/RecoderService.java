@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import picocli.CommandLine;
 
@@ -50,6 +51,7 @@ public class RecoderService {
     private final OsNative osNative;
     private final CueService cueService;
 
+    @SuppressWarnings("NotNullFieldNotInitialized")
     private CommandController.Params paraCoderParams;
 
     /**
@@ -216,7 +218,7 @@ public class RecoderService {
         };
     }
 
-    private BiConsumer<Integer, Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
+    private BiConsumer<Integer, @Nullable Throwable> oneFileProcessCompleteAction(Path sourceFilePath) {
         return (exitCode, t) -> {
             if (t != null) {
                 log.error("Error on processing source file: {}", sourceFilePath, t);
@@ -241,7 +243,7 @@ public class RecoderService {
     /**
      * Convert exception to integer exit codes
      */
-    private BiFunction<Integer, Throwable, Integer> oneFileProcessResultAction() {
+    private BiFunction<Integer, @Nullable Throwable, Integer> oneFileProcessResultAction() {
         return (exitCode, t) -> {
             if (t == null) {
                 return exitCode;

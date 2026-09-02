@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -88,7 +89,7 @@ public class RecodeCommand {
     String makeFFMpegMetadata(CueTrackPayload trackPayload) {
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
-        var metadata = new HashMap<String, Object>();
+        var metadata = new HashMap<String, @Nullable Object>();
 
         metadata.put("ARTIST", trackPayload.performer());
         metadata.put("ALBUM", trackPayload.album());

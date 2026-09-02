@@ -3,6 +3,7 @@ package by.rayden.paracoder.service;
 import by.rayden.paracoder.cli.command.CommandController;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,7 @@ public class RecoderThreadPool {
     private final CommandController commandController;
 
     @Getter
-    private ExecutorService executor;
+    private @Nullable ExecutorService executor;
 
 
     public RecoderThreadPool(CommandController commandController) {

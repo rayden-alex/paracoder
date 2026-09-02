@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Gatherer;
@@ -28,7 +29,8 @@ public class ProcessRunner {
     }
 
     public CompletableFuture<Integer> execCommandAsync(String recodeCommand, Path sourceFilePath) {
-        return CompletableFuture.supplyAsync(() -> exec(recodeCommand, sourceFilePath), this.pool.getExecutor());
+        var executor = Objects.requireNonNull(this.pool.getExecutor());
+        return CompletableFuture.supplyAsync(() -> exec(recodeCommand, sourceFilePath), executor);
     }
 
     // TODO 2024-02-07: Add process output redirect (configurable by CLI option) to a file.

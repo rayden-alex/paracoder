@@ -6,6 +6,7 @@ import by.rayden.paracoder.config.PatternProperties;
 import by.rayden.paracoder.service.RecoderService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import picocli.CommandLine.Command;
@@ -72,7 +73,7 @@ public class CommandController implements Callable<Integer> {
     private Path configPath = Path.of("paracoder_commands.yml");
 
     @Parameters(arity = "1..*", description = "Files and directories to recode")
-    private List<Path> inputPathList;
+    private @Nullable List<Path> inputPathList;
 
 
     public List<Path> getInputPathList() {

@@ -1,7 +1,7 @@
 package by.rayden.paracoder.service;
 
 import lombok.Builder;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
