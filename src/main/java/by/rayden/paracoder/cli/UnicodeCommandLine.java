@@ -30,13 +30,15 @@ public class UnicodeCommandLine {
         try {
             log.debug("In case we fail fallback would happen to: {}", Arrays.toString(fallBackTo));
             String[] commandLine = this.osNative.getUnicodeCommandLine();
-            log.debug("According to Windows API program was started with arguments: {}", Arrays.toString(commandLine));
+            log.atDebug().setMessage("According to Windows API program was started with arguments: {}")
+               .addArgument(() -> Arrays.toString(commandLine)).log();
 
             List<String> argumentsOnly = getArgumentsOnly(commandLine);
             log.debug("argumentsOnly={}", argumentsOnly);
 
             String[] argumentsArray = (!argumentsOnly.isEmpty()) ? argumentsOnly.toArray(String[]::new) : fallBackTo;
-            log.debug("These arguments will be used: {}", Arrays.toString(argumentsArray));
+            log.atDebug().setMessage("These arguments will be used: {}")
+               .addArgument(() -> Arrays.toString(argumentsArray)).log();
             return argumentsArray;
         } catch (Throwable t) {
             log.error("Failed to use JNA to get current program command line arguments", t);
