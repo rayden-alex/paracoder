@@ -51,8 +51,11 @@ public class RecoderThreadPool {
     private void destroy() throws InterruptedException {
         if (this.executor != null) {
             this.executor.shutdown();
-            //noinspection ResultOfMethodCallIgnored
-            this.executor.awaitTermination(10, TimeUnit.SECONDS);
+
+            boolean isTerminated = this.executor.awaitTermination(10, TimeUnit.SECONDS);
+            if (!isTerminated) {
+                log.error("Timeout elapsed before termination RecoderThreadPool executor!");
+            }
         }
     }
 
