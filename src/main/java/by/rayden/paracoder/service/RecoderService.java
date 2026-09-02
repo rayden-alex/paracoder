@@ -284,14 +284,11 @@ public class RecoderService {
         }
     }
 
-    // @SneakyThrows
+    @SneakyThrows
     // [BUG] SneakyThrows has a runtime dependency on lombok.Lombok on Java 26 #4040
+    // Fixed in Lombok v1.18.48 (September 1st, 2026)
     private void deleteFileToTrash(Path filePath) {
-        try {
-            this.osNative.deleteToTrash(filePath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        this.osNative.deleteToTrash(filePath);
     }
 
     private CompletableFuture<Integer> handleUnhandledExceptions(CompletableFuture<Integer> future) {
