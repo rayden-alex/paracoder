@@ -1,7 +1,6 @@
 package by.rayden.paracoder.service;
 
 import lombok.Builder;
-import lombok.Getter;
 import org.springframework.lang.Nullable;
 
 import java.nio.file.Path;
@@ -11,39 +10,25 @@ import java.time.LocalTime;
 /**
  * <a href="https://wiki.hydrogenaudio.org/index.php?title=Cue_sheet">Cue_sheet Wiki</a>
  */
-@Getter
 @Builder
-public class CueTrackPayload {
-    private int trackNumber;
-    private int totalTracks;
-    private String title;
-    private String performer;
+public record CueTrackPayload(
+    int trackNumber,
+    int totalTracks,
+    String title,
+    String performer,
 
-    @Nullable
-    private String genre;
+    @Nullable String genre,
+    @Nullable Integer year,
+    @Nullable String album,
+    @Nullable String comment,
+    @Nullable String discId,
+    @Nullable Integer discNumber,
+    @Nullable Integer totalDiscs,
 
-    @Nullable
-    private Integer year;
+    LocalTime startTime,
+    LocalTime endTime,
 
-    @Nullable
-    private String album;
-
-    @Nullable
-    private String comment;
-
-    @Nullable
-    private String discId;
-
-    @Nullable
-    private Integer discNumber;
-
-    @Nullable
-    private Integer totalDiscs;
-
-    private LocalTime startTime;
-    private LocalTime endTime;
-
-    private Path audioFilePath;
-    private Path sourceFilePath;
-    private FileTime audioFileTime;
-}
+    Path audioFilePath,
+    Path sourceFilePath,
+    FileTime audioFileTime
+) {}

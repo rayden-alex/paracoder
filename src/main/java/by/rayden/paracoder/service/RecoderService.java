@@ -191,9 +191,9 @@ public class RecoderService {
         String command = this.recodeCommand.getCommand(trackPayload);
         Path targetFilePath = getTargetFilePath(command);
 
-        return this.processRunner.execCommandAsync(command, trackPayload.getSourceFilePath())
+        return this.processRunner.execCommandAsync(command, trackPayload.sourceFilePath())
                                  .orTimeout(10, TimeUnit.MINUTES) //TODO
-                                 .thenApply(preserveTimestampAction(targetFilePath, trackPayload.getAudioFileTime()))
+                                 .thenApply(preserveTimestampAction(targetFilePath, trackPayload.audioFileTime()))
                                  .whenComplete(oneFileProcessCompleteAction(targetFilePath)) // TODO:
                                  .handle(oneFileProcessResultAction());
     }

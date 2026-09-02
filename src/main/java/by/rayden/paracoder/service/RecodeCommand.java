@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collector;
@@ -48,7 +49,7 @@ public class RecodeCommand {
     }
 
     public String getCommand(CueTrackPayload cueTrackPayload) {
-        String audioFileExt = FilenameUtils.getExtension(cueTrackPayload.getAudioFilePath().toString());
+        String audioFileExt = FilenameUtils.getExtension(cueTrackPayload.audioFilePath().toString());
         String commandTemplate = getCommandTemplate("cue_" + audioFileExt.toLowerCase(), "cue_any");
 
         return resolvePlaceholders(commandTemplate, cueTrackPayload);
@@ -68,17 +69,17 @@ public class RecodeCommand {
     }
 
     private String resolvePlaceholders(String commandTemplate, CueTrackPayload trackPayload) {
-        String filePath = trackPayload.getAudioFilePath().toString();
+        String filePath = trackPayload.audioFilePath().toString();
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
         // Required values for placeholders. Cannot be null.
         return resolvePlaceholders(commandTemplate, filePath)
-            .replace("{{CUE_ST}}", trackPayload.getStartTime().format(FFMPEG_TIME_FORMATTER))
-            .replace("{{CUE_ET}}", trackPayload.getEndTime().format(FFMPEG_TIME_FORMATTER))
+            .replace("{{CUE_ST}}", trackPayload.startTime().format(FFMPEG_TIME_FORMATTER))
+            .replace("{{CUE_ET}}", trackPayload.endTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_METADATA}}", makeFFMpegMetadata(trackPayload))
-            .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.getTrackNumber()))
-            .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getTitle())))
-            .replace("{{CUE_ARTIST}}", sanitizeFileName(Objects.requireNonNull(trackPayload.getPerformer())));
+            .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.trackNumber()))
+            .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.title())))
+            .replace("{{CUE_ARTIST}}", sanitizeFileName(Objects.requireNonNull(trackPayload.performer())));
     }
 
     @VisibleForTesting
@@ -87,17 +88,17 @@ public class RecodeCommand {
 
         var metadata = new HashMap<String, Object>();
 
-        metadata.put("ARTIST", trackPayload.getPerformer());
-        metadata.put("ALBUM", trackPayload.getAlbum());
-        metadata.put("TITLE", trackPayload.getTitle());
-        metadata.put("TRACK", numberFormater.format(trackPayload.getTrackNumber()));
-        metadata.put("TOTALTRACKS", numberFormater.format(trackPayload.getTotalTracks()));
-        metadata.put("DISCNUMBER", trackPayload.getDiscNumber());
-        metadata.put("TOTALDISCS", trackPayload.getTotalDiscs());
-        metadata.put("GENRE", trackPayload.getGenre());
-        metadata.put("DATE", trackPayload.getYear());
-        metadata.put("COMMENT", trackPayload.getComment());
-        metadata.put("DISCID", trackPayload.getDiscId());
+        metadata.put("ARTIST", trackPayload.performer());
+        metadata.put("ALBUM", trackPayload.album());
+        metadata.put("TITLE", trackPayload.title());
+        metadata.put("TRACK", numberFormater.format(trackPayload.trackNumber()));
+        metadata.put("TOTALTRACKS", numberFormater.format(trackPayload.totalTracks()));
+        metadata.put("DISCNUMBER", trackPayload.discNumber());
+        metadata.put("TOTALDISCS", trackPayload.totalDiscs());
+        metadata.put("GENRE", trackPayload.genre());
+        metadata.put("DATE", trackPayload.year());
+        metadata.put("COMMENT", trackPayload.comment());
+        metadata.put("DISCID", trackPayload.discId());
 
         return metadata.entrySet().stream()
                        .filter(entry -> entry.getValue() != null && !entry.getValue().toString().isBlank())

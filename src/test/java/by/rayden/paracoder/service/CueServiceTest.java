@@ -106,23 +106,23 @@ class CueServiceTest {
         var cueTrackPayload = this.cueService.getAllCueTracksPayloadList(sourceFilePath).get(1); //Second track
 
         assertThat(cueTrackPayload).isNotNull();
-        assertThat(cueTrackPayload.getPerformer()).isEqualTo("Мара");
-        assertThat(cueTrackPayload.getTitle()).isEqualTo("Новое время");
-        assertThat(cueTrackPayload.getGenre()).isEqualTo("Pop Rock");
-        assertThat(cueTrackPayload.getDiscId()).isEqualTo("AE09C50C");
-        assertThat(cueTrackPayload.getComment()).isEqualTo("ExactAudioCopy v1.0b3");
-        assertThat(cueTrackPayload.getYear()).isEqualTo(2013);
-        assertThat(cueTrackPayload.getTrackNumber()).isEqualTo(2);
-        assertThat(cueTrackPayload.getTotalTracks()).isEqualTo(12);
-        assertThat(cueTrackPayload.getAlbum()).isEqualTo("Почувствуй разницу");
+        assertThat(cueTrackPayload.performer()).isEqualTo("Мара");
+        assertThat(cueTrackPayload.title()).isEqualTo("Новое время");
+        assertThat(cueTrackPayload.genre()).isEqualTo("Pop Rock");
+        assertThat(cueTrackPayload.discId()).isEqualTo("AE09C50C");
+        assertThat(cueTrackPayload.comment()).isEqualTo("ExactAudioCopy v1.0b3");
+        assertThat(cueTrackPayload.year()).isEqualTo(2013);
+        assertThat(cueTrackPayload.trackNumber()).isEqualTo(2);
+        assertThat(cueTrackPayload.totalTracks()).isEqualTo(12);
+        assertThat(cueTrackPayload.album()).isEqualTo("Почувствуй разницу");
 
         final var inaccuracy = new TemporalUnitLessThanOffset(1, ChronoUnit.MICROS);
 
         // INDEX 01 00:57:57  --->>  57sec 57frames. (75 frames per second)
         final int nanos = (int) ((57L * 1000_000_000L) / 75L);
-        assertThat(cueTrackPayload.getStartTime()).isCloseTo(LocalTime.of(0, 0, 57, nanos), inaccuracy);
+        assertThat(cueTrackPayload.startTime()).isCloseTo(LocalTime.of(0, 0, 57, nanos), inaccuracy);
         // INDEX 01 03:49:00
-        assertThat(cueTrackPayload.getEndTime()).isCloseTo(LocalTime.of(0, 3, 49, 0), inaccuracy);
+        assertThat(cueTrackPayload.endTime()).isCloseTo(LocalTime.of(0, 3, 49, 0), inaccuracy);
     }
 
     @Test
