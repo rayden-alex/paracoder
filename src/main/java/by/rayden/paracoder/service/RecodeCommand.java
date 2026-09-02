@@ -38,7 +38,9 @@ public class RecodeCommand {
         '>', '˃'
     );
 
-    private static final DateTimeFormatter FFMPEG_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    private static final DateTimeFormatter FFMPEG_TIME_FORMATTER = DateTimeFormatter
+        .ofPattern("HH:mm:ss.SSS", Locale.ROOT);
+
     private final PatternProperties patternProperties;
 
     public String getCommand(Path filePath) {
