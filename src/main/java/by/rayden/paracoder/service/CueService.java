@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -44,9 +45,8 @@ public class CueService {
      */
     public static final String CUE_EXT = "cue";
 
-    private static final int SECONDS_PER_MINUTE = 60;
-    private static final long NANOS_PER_SECOND = 1000_000_000L;
-    private static final long NANOS_PER_MINUTE = NANOS_PER_SECOND * SECONDS_PER_MINUTE;
+    private static final long NANOS_PER_SECOND = ChronoUnit.SECONDS.getDuration().toNanos();
+    private static final long NANOS_PER_MINUTE = ChronoUnit.MINUTES.getDuration().toNanos();
 
     /**
      * CD Audio (Red Book) has 75 frames per second
