@@ -14,34 +14,16 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class RecodeCommand {
-    /**
-     * Map to replace invalid characters in file name to HomoGlyphs
-     */
-    @SuppressWarnings("UnnecessaryUnicodeEscape")
-    private static final Map<Character, Character> SANITIZE_FILENAME_MAP = Map.of(
-        '\t', ' ',
-        '"', '″',
-        '/', '╱',
-        '\\', '⧹',
-        '|', '￨',
-        '?', '？',
-        ':', '∶',
-        '*', '∗',
-        '<', '˂',
-        '>', '˃'
-    );
-
     private static final DateTimeFormatter FFMPEG_TIME_FORMATTER = DateTimeFormatter
         .ofPattern("HH:mm:ss.SSS", Locale.ROOT);
 
+    private final FileNameSanitizer fileNameSanitizer;
     private final PatternProperties patternProperties;
 
     public String getCommand(Path filePath) {
@@ -76,13 +58,14 @@ public class RecodeCommand {
         final DecimalFormat numberFormater = new DecimalFormat("#00");
 
         // Required values for placeholders. Cannot be null.
+        // trackNumber, title, performer - allready validated by CueService.validateTrackData()
         return resolvePlaceholders(commandTemplate, filePath)
             .replace("{{CUE_ST}}", trackPayload.startTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_ET}}", trackPayload.endTime().format(FFMPEG_TIME_FORMATTER))
             .replace("{{CUE_METADATA}}", makeFFMpegMetadata(trackPayload))
             .replace("{{CUE_NUM}}", numberFormater.format(trackPayload.trackNumber()))
-            .replace("{{CUE_TITLE}}", sanitizeFileName(Objects.requireNonNull(trackPayload.title())))
-            .replace("{{CUE_ARTIST}}", sanitizeFileName(Objects.requireNonNull(trackPayload.performer())));
+            .replace("{{CUE_TITLE}}", this.fileNameSanitizer.sanitize(trackPayload.title()))
+            .replace("{{CUE_ARTIST}}", this.fileNameSanitizer.sanitize(trackPayload.performer()));
     }
 
     @VisibleForTesting
@@ -111,18 +94,6 @@ public class RecodeCommand {
 
     private String createMetadataCommand(Map.Entry<String, Object> entry) {
         return "-metadata " + entry.getKey() + "=" + "\"" + entry.getValue() + "\"";
-    }
-
-    private String sanitizeFileName(String name) {
-        return name.chars()
-                   .mapToObj(i -> (char) i)
-                   .map(c -> SANITIZE_FILENAME_MAP.getOrDefault(c, c))
-                   // .filter(c -> Character.isLetterOrDigit(c) || c == '-' || c == '_')
-                   .collect(Collector.of(
-                       StringBuilder::new,
-                       StringBuilder::append,
-                       StringBuilder::append,
-                       StringBuilder::toString));
     }
 
 }
